@@ -19,11 +19,16 @@ int main(int argc, char** argv) {
     SDLNW_Widget* placeholder = SDLNW_CreatePlaceholderWidget();
     SDLNW_Widget_Size(placeholder, &(SDL_Rect) {0, 0, WIDTH, HEIGHT});
 
+    SDLNW_Widget* surface = SDLNW_CreateSurfaceWidget((SDLNW_Colour) {0xFF, 0x00, 0x00});
+    SDLNW_Widget_Size(surface, &(SDL_Rect) {0, 0, WIDTH, HEIGHT});
+
     int running = 1;
     SDL_Event event;
 
     while(running) {
-        SDLNW_Widget_Draw(placeholder, renderer);
+        // SDLNW_Widget_Draw(placeholder, renderer);
+        SDLNW_Widget_Draw(surface, renderer);
+
         SDL_RenderPresent(renderer);
 
         while(SDL_PollEvent(&event)) {

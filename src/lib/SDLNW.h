@@ -2,10 +2,17 @@
 #define SDLNW_H
 
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_pixels.h>
 
 /*
     Public declerations for the SDLNW library.
 */
+
+typedef struct {
+    Uint8 r;
+    Uint8 g;
+    Uint8 b;
+} SDLNW_Colour;
 
 struct struct_SDLNW_Widget;
 typedef struct struct_SDLNW_Widget SDLNW_Widget;
@@ -29,5 +36,6 @@ struct struct_SDLNW_Widget {
 };
 
 SDLNW_Widget* SDLNW_CreatePlaceholderWidget();
+SDLNW_Widget* SDLNW_CreateSurfaceWidget(SDLNW_Colour colour);
 
 #endif
