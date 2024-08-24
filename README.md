@@ -8,7 +8,7 @@ In no particular order.
 
 - [x] Placeholder widget
 - [ ] Row widget
-- [ ] Column widget
+- [x] Column widget
 - [x] Surface widget
 - [ ] Button widget
 - [ ] Styling

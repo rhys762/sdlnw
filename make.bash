@@ -1,3 +1,3 @@
 #!/bin/bash
 
-gcc src/test/main.c src/lib/*.c -lSDL2
+gcc src/test/main.c src/lib/*.c -g -lSDL2

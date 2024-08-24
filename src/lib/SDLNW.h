@@ -35,7 +35,22 @@ struct struct_SDLNW_Widget {
     void* data;
 };
 
+/*
+    For storing a group of widgets, typically for
+    a row, column or zstack
+*/
+typedef struct {
+    SDLNW_Widget** widgets;
+    int len;
+    int cap;
+} SDLNW_WidgetList;
+
+SDLNW_WidgetList* SDLNW_WidgetList_Create();
+void SDLNW_WidgetList_Push(SDLNW_WidgetList* list, SDLNW_Widget* w);
+void SDLNW_WidgetList_Destroy(SDLNW_WidgetList* list);
+
 SDLNW_Widget* SDLNW_CreatePlaceholderWidget();
 SDLNW_Widget* SDLNW_CreateSurfaceWidget(SDLNW_Colour colour);
+SDLNW_Widget* SDLNW_CreateColumnWidget(SDLNW_WidgetList* list);
 
 #endif

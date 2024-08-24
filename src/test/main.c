@@ -17,17 +17,24 @@ int main(int argc, char** argv) {
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, 0);
 
     SDLNW_Widget* placeholder = SDLNW_CreatePlaceholderWidget();
-    SDLNW_Widget_Size(placeholder, &(SDL_Rect) {0, 0, WIDTH, HEIGHT});
 
     SDLNW_Widget* surface = SDLNW_CreateSurfaceWidget((SDLNW_Colour) {0xFF, 0x00, 0x00});
-    SDLNW_Widget_Size(surface, &(SDL_Rect) {0, 0, WIDTH, HEIGHT});
+
+    SDLNW_WidgetList *list = SDLNW_WidgetList_Create();
+    SDLNW_WidgetList_Push(list, placeholder);
+    SDLNW_WidgetList_Push(list, surface);
+
+    SDLNW_Widget* column = SDLNW_CreateColumnWidget(list);
 
     int running = 1;
     SDL_Event event;
 
+    SDLNW_Widget_Size(column, &(SDL_Rect) {0, 0, WIDTH, HEIGHT});
+
     while(running) {
         // SDLNW_Widget_Draw(placeholder, renderer);
-        SDLNW_Widget_Draw(surface, renderer);
+        // SDLNW_Widget_Draw(surface, renderer);
+        SDLNW_Widget_Draw(column, renderer);
 
         SDL_RenderPresent(renderer);
 
@@ -37,8 +44,10 @@ int main(int argc, char** argv) {
             }
         }
 
-        SDL_Delay(500);
+        SDL_Delay(50);
     }
+
+    SDLNW_Widget_Destroy(column);
 
     SDL_Quit();
 
