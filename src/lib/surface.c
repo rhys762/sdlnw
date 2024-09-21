@@ -19,5 +19,7 @@ SDLNW_Widget* SDLNW_CreateSurfaceWidget(SDLNW_Colour colour) {
     widget->data = malloc(sizeof(SDLNW_Colour));
     *(SDLNW_Colour*)(widget->data) = colour;
 
+    widget->on_destroy_list = NULL;
+
     return widget;
 }

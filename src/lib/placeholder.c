@@ -26,5 +26,7 @@ SDLNW_Widget* SDLNW_CreatePlaceholderWidget() {
     widget->size = (SDL_Rect){0};
     widget->data = NULL;
 
+    widget->on_destroy_list = NULL;
+
     return widget;
 }

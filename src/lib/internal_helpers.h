@@ -3,6 +3,10 @@
 
 #include "SDLNW.h"
 
+// inits a vtable to safe defaults
 void init_default_vtable(SDLNW_Widget_VTable* table);
+
+// returns 1 if a point is in a rect, else 0
+int is_point_within_rect(int x, int y, const SDL_Rect* rect);
 
 #endif
