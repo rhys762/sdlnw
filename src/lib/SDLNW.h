@@ -1,6 +1,7 @@
 #ifndef SDLNW_H
 #define SDLNW_H
 
+#include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_pixels.h>
 
@@ -61,17 +62,39 @@ SDLNW_WidgetList* SDLNW_WidgetList_Create();
 void SDLNW_WidgetList_Push(SDLNW_WidgetList* list, SDLNW_Widget* w);
 void SDLNW_WidgetList_Destroy(SDLNW_WidgetList* list);
 
+/*
+    Font management and caching.
+*/
+
+typedef struct {
+    TTF_Font* font;
+} SDLNW_Font;
+
+SDLNW_Font* SDLNW_Font_Create(const char* path, int ptsize);
+void SDLNW_Font_Destroy(SDLNW_Font* font);
+
+/*
+    Widget creators
+*/
+
 SDLNW_Widget* SDLNW_CreatePlaceholderWidget();
 SDLNW_Widget* SDLNW_CreateSurfaceWidget(SDLNW_Colour colour);
+// list is displayed top down
 SDLNW_Widget* SDLNW_CreateColumnWidget(SDLNW_WidgetList* list);
+// first on bottom, last on top
+SDLNW_Widget* SDLNW_CreateZStackWidget(SDLNW_WidgetList* list);
 SDLNW_Widget* SDLNW_CreateButtonWidget(SDLNW_Widget* child, void* data, void(*cb)(void* data, int x, int y));
 SDLNW_Widget* SDLNW_CreateCompositeWidget(void* data, SDLNW_Widget*(*cb)(SDLNW_Widget* parent, void*data));
+// a label is intended for a single line of centered text.
+SDLNW_Widget* SDLNW_CreateLabelWidget(const char* text, SDLNW_Font* font);
 
 /*
     Bootstrap is to make a 'simple' gui app easy, in theory a main should be able to
+    - init sdl and ttf
     - create a widget
     - pass it to bootstrap.
     - destroy widget after bootstrap returns
+    - quit sdl and ttf
 */
 
 void SDLNW_bootstrap(SDLNW_Widget* widget);

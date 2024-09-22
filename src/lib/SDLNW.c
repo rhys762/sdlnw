@@ -3,6 +3,7 @@
 #include <SDL2/SDL_events.h>
 #include <SDL2/SDL_mouse.h>
 #include <SDL2/SDL_render.h>
+#include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_video.h>
 #include <assert.h>
 #include <stdlib.h>
@@ -110,8 +111,6 @@ void SDLNW_WidgetList_Destroy(SDLNW_WidgetList* list) {
 }
 
 void SDLNW_bootstrap(SDLNW_Widget* widget) {
-    SDL_Init(SDL_INIT_EVERYTHING);
-
     int running = 1;
     SDL_Event event;
 
@@ -144,6 +143,4 @@ void SDLNW_bootstrap(SDLNW_Widget* widget) {
 
     SDL_DestroyWindow(window);
     SDL_DestroyRenderer(renderer);
-
-    SDL_Quit();
 }
