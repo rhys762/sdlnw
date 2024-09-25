@@ -40,14 +40,14 @@ In no particular order.
 - [ ] Paragraph widget
 - [ ] Text Field widget
 - [ ] Text Entry widget
-- [ ] Z stack widget
+- [x] Z stack widget
 - [ ] Routing
 - [x] widgets that can rebuild at runtime, composed of other widgets.
 - [x] Build system
 - [ ] Testing, inc renderering
-- [ ] Mouse pointer updates, eg standard and clickable.
+- [x] Mouse pointer updates, eg standard and clickable.
 
 ## Misc
 
 - [ ] Create widget functions malloc multiple times, can be combined
-- [ ] Prevent mistakes to have a generic widget initialiser
+- [ ] Const correctness

@@ -34,8 +34,7 @@ struct on_destroy_list {
 void SDLNW_Widget_Destroy(SDLNW_Widget* w) {
     struct on_destroy_list* lst = w->on_destroy_list;
     if (lst != NULL) {
-        int i;
-        for (i = 0; i < lst->len; i++) {
+        for (uint i = 0; i < lst->len; i++) {
             lst->arr[i].cb(lst->arr[i].data);
         }
         free(lst->arr);
@@ -75,7 +74,7 @@ void SDLNW_Widget_AddOnDestroy(SDLNW_Widget* w, void* data, void(*cb)(void* data
     lst->len += 1;
 }
 
-SDLNW_WidgetList* SDLNW_WidgetList_Create() {
+SDLNW_WidgetList* SDLNW_WidgetList_Create(void) {
     SDLNW_WidgetList* list = malloc(sizeof(SDLNW_WidgetList));
 
     list->cap = 4;
@@ -96,8 +95,12 @@ void SDLNW_WidgetList_Push(SDLNW_WidgetList* list, SDLNW_Widget* w) {
     list->len += 1;
 }
 
+SDL_SystemCursor SDLNW_Widget_GetAppropriateCursor(SDLNW_Widget* w, int x, int y) {
+    return w->vtable.appropriate_cursor(w, x, y);
+}
+
 void SDLNW_WidgetList_Destroy(SDLNW_WidgetList* list) {
-    for (int i = 0; i < list->len; i++) {
+    for (uint i = 0; i < list->len; i++) {
         SDLNW_Widget_Destroy(list->widgets[i]);
         list->widgets[i] = NULL;
     }
@@ -137,6 +140,9 @@ void SDLNW_bootstrap(SDLNW_Widget* widget) {
             }
             else if (event.type == SDL_MOUSEMOTION) {
                 SDL_GetMouseState(&mouse_x, &mouse_y);
+                SDL_SystemCursor widget_cursor = SDLNW_Widget_GetAppropriateCursor(widget, mouse_x, mouse_y);
+                SDL_Cursor* cursor =  SDL_CreateSystemCursor(widget_cursor);
+                SDL_SetCursor(cursor);
             }
         }
     }

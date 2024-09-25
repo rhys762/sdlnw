@@ -1,4 +1,5 @@
-project('SDLNW', 'c')
+project('SDLNW', 'c',
+default_options: ['warning_level=3'])
 
 sdl2_dep = dependency('sdl2')
 ttf_dep = dependency('SDL2_ttf')

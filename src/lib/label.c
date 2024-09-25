@@ -75,17 +75,13 @@ static void destroy(SDLNW_Widget* w) {
 }
 
 SDLNW_Widget* SDLNW_CreateLabelWidget(const char* text, SDLNW_Font* font) {
-    SDLNW_Widget* widget = malloc(sizeof(SDLNW_Widget));
+    SDLNW_Widget* widget = create_default_widget();
 
-    init_default_vtable(&widget->vtable);
     widget->vtable.draw = draw;
     widget->vtable.size = size;
     widget->vtable.destroy = destroy;
-    widget->size = (SDL_Rect){0};
 
     widget->data = malloc(sizeof(struct label_data));
-
-    widget->on_destroy_list = NULL;
 
     struct label_data* data = widget->data;
 

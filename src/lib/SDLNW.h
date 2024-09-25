@@ -22,6 +22,7 @@ typedef struct {
     void (*draw)(SDLNW_Widget* w, SDL_Renderer* renderer);
     void (*size)(SDLNW_Widget* w, const SDL_Rect* rect);
     void (*click)(SDLNW_Widget* w, int x, int y);
+    SDL_SystemCursor (*appropriate_cursor)(SDLNW_Widget* w, int x, int y);
     void (*destroy)(SDLNW_Widget* w);
 } SDLNW_Widget_VTable;
 
@@ -29,6 +30,7 @@ typedef struct {
 void SDLNW_Widget_Draw(SDLNW_Widget* w, SDL_Renderer* renderer);
 void SDLNW_Widget_Size(SDLNW_Widget* w, const SDL_Rect* rect);
 void SDLNW_Widget_Click(SDLNW_Widget* w, int x, int y);
+SDL_SystemCursor SDLNW_Widget_GetAppropriateCursor(SDLNW_Widget* w, int x, int y);
 void SDLNW_Widget_Destroy(SDLNW_Widget* w);
 // other helpers
 // adds data and callback which will be executed when the widget is destroyed
@@ -54,11 +56,11 @@ struct struct_SDLNW_Widget {
 */
 typedef struct {
     SDLNW_Widget** widgets;
-    int len;
-    int cap;
+    uint len;
+    uint cap;
 } SDLNW_WidgetList;
 
-SDLNW_WidgetList* SDLNW_WidgetList_Create();
+SDLNW_WidgetList* SDLNW_WidgetList_Create(void);
 void SDLNW_WidgetList_Push(SDLNW_WidgetList* list, SDLNW_Widget* w);
 void SDLNW_WidgetList_Destroy(SDLNW_WidgetList* list);
 
@@ -77,7 +79,7 @@ void SDLNW_Font_Destroy(SDLNW_Font* font);
     Widget creators
 */
 
-SDLNW_Widget* SDLNW_CreatePlaceholderWidget();
+SDLNW_Widget* SDLNW_CreatePlaceholderWidget(void);
 SDLNW_Widget* SDLNW_CreateSurfaceWidget(SDLNW_Colour colour);
 // list is displayed top down
 SDLNW_Widget* SDLNW_CreateColumnWidget(SDLNW_WidgetList* list);

@@ -10,7 +10,7 @@
 #define WIDTH 500
 #define HEIGHT 800
 
-int main(int argc, char** argv) {
+int main(void) {
     SDL_Init(SDL_INIT_EVERYTHING);
 
     SDL_Window* window = SDL_CreateWindow("0_column.c", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WIDTH, HEIGHT, 0);

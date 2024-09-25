@@ -18,15 +18,10 @@ static void draw(SDLNW_Widget* wid, SDL_Renderer* renderer) {
     SDL_RenderDrawLine(renderer, x, y + h, x + w, y);
 }
 
-SDLNW_Widget* SDLNW_CreatePlaceholderWidget() {
-    SDLNW_Widget* widget = malloc(sizeof(SDLNW_Widget));
+SDLNW_Widget* SDLNW_CreatePlaceholderWidget(void) {
+    SDLNW_Widget* widget = create_default_widget();
 
-    init_default_vtable(&widget->vtable);
     widget->vtable.draw = draw;
-    widget->size = (SDL_Rect){0};
-    widget->data = NULL;
-
-    widget->on_destroy_list = NULL;
 
     return widget;
 }

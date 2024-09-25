@@ -27,6 +27,13 @@ static void size(SDLNW_Widget* w, const SDL_Rect* rect) {
     SDLNW_Widget_Size(data->child, rect);
 }
 
+static SDL_SystemCursor appropriate_cursor(SDLNW_Widget* w, int x, int y) {
+    (void)w; // unused
+    (void)x; // unused
+    (void)y; // unused
+    return SDL_SYSTEM_CURSOR_HAND;
+}
+
 static void destroy(SDLNW_Widget* w) {
     struct button_data* data = w->data;
 
@@ -37,19 +44,16 @@ static void destroy(SDLNW_Widget* w) {
 }
 
 SDLNW_Widget* SDLNW_CreateButtonWidget(SDLNW_Widget* child, void* data, void(*cb)(void* data, int x, int y)) {
-    SDLNW_Widget* widget = malloc(sizeof(SDLNW_Widget));
+    SDLNW_Widget* widget = create_default_widget();
 
-    init_default_vtable(&widget->vtable);
     widget->vtable.draw = draw;
     widget->vtable.size = size;
     widget->vtable.click = click;
+    widget->vtable.appropriate_cursor = appropriate_cursor;
     widget->vtable.destroy = destroy;
-    widget->size = (SDL_Rect){0};
 
     widget->data = malloc(sizeof(struct button_data));
     *((struct button_data*)widget->data) = (struct button_data){ .child = child, .data = data, .cb = cb};
-
-    widget->on_destroy_list = NULL;
 
     return widget;
 }

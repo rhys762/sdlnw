@@ -16,6 +16,9 @@ struct composite_state {
 };
 
 void on_click(void* p, int x, int y) {
+    (void)x; // unused
+    (void)y; // unused
+
     struct composite_state* state = p;
     state->app_state->clicked_count += 1;
     SDLNW_Widget_Recompose(state->composite);
@@ -62,7 +65,7 @@ SDLNW_Widget* build(SDLNW_Widget* parent, void* state) {
     return button;
 }
 
-int main(int argc, char** argv) {
+int main(void) {
     SDL_Init(SDL_INIT_EVERYTHING);
     TTF_Init();
 
@@ -75,6 +78,7 @@ int main(int argc, char** argv) {
     SDLNW_bootstrap(widget);    
 
     SDLNW_Widget_Destroy(widget);
+    SDLNW_Font_Destroy(font);
 
     TTF_Quit();
     SDL_Quit();
