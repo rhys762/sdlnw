@@ -1,39 +1,59 @@
+/*
+This example shows how to load fonts and use composite widgets.
+Composite widgets are comprised of other widgets and build according to a state.
+That state can be adjusted as desired and the composite widget ordered to rebuild.
+
+The app itself is a click counter, with the surface changing colour on each click.
+*/
+
 #include "../lib/SDLNW.h"
 #include "SDL_stdinc.h"
+#include <libgen.h>
 
 #include <stdio.h>
 #include <assert.h>
 
 SDLNW_Font *font = NULL;
 
+// this will track the ongoing state of our app
+// the composite state will be have a reference to this
 struct app_state {
     int clicked_count;
 };
 
-struct composite_state {
+// the data provided to the button for its click handler
+struct button_data {
+    // ref to global state
     struct app_state* app_state;
+    // ref to its parent, so it can trigger rebuilds
     SDLNW_Widget* composite;
 };
 
+// the onclick handler for the button
+// increment the click counter and 
+// order the composite widget to rebuild
 void on_click(void* p, int x, int y) {
     (void)x; // unused
     (void)y; // unused
 
-    struct composite_state* state = p;
-    state->app_state->clicked_count += 1;
-    SDLNW_Widget_Recompose(state->composite);
+    struct button_data* data = p;
+    data->app_state->clicked_count += 1;
+    // UB if not given a composite widget.
+    SDLNW_Widget_Recompose(data->composite);
 }
 
+// builder function for the composite widget
 SDLNW_Widget* build(SDLNW_Widget* parent, void* state) {
     // since we are allocating the state, we will need to clean up later
-    struct composite_state* c_state = malloc(sizeof(struct composite_state));
-    c_state->app_state = state;
-    c_state->composite = parent;
+    struct button_data* data = malloc(sizeof(struct button_data));
+    data->app_state = state;
+    data->composite = parent;
 
+    // the zstack list, we will be putting a text label on top of a surface
     SDLNW_WidgetList* list = SDLNW_WidgetList_Create();
 
     SDLNW_Colour colour;
-    if (c_state->app_state->clicked_count % 2) {
+    if (data->app_state->clicked_count % 2) {
         colour = (SDLNW_Colour) {0xFF, 0x00, 0x00};
     } else {
         colour = (SDLNW_Colour) {0x00, 0xFF, 0x00};
@@ -41,42 +61,58 @@ SDLNW_Widget* build(SDLNW_Widget* parent, void* state) {
 
     SDLNW_WidgetList_Push(list, SDLNW_CreateSurfaceWidget(colour));
 
-    if (c_state->app_state->clicked_count == 0) {
+    if (data->app_state->clicked_count == 0) {
         SDLNW_WidgetList_Push(list, SDLNW_CreateLabelWidget("Click Me!", font));
     } else {
         char* text;
-        SDL_asprintf(&text, "%d clicks", c_state->app_state->clicked_count);
+        SDL_asprintf(&text, "%d clicks", data->app_state->clicked_count);
 
         SDLNW_Widget* label = SDLNW_CreateLabelWidget(text, font);
 
         SDLNW_WidgetList_Push(list, label);
-        // free the text when the label widget is removed
+        // widgets can be told to run arbritrary cleanups on destruction,
+        // here we free the text when the label is destroyed.
         SDLNW_Widget_AddOnDestroy(label, text, free);
     }
     
 
     SDLNW_Widget* zstack = SDLNW_CreateZStackWidget(list);
+    SDLNW_Widget* button = SDLNW_CreateButtonWidget(zstack, data, on_click);
 
-    SDLNW_Widget* button = SDLNW_CreateButtonWidget(zstack, c_state, on_click);
-
-    // clean up state that we allocated
-    SDLNW_Widget_AddOnDestroy(button, c_state, free);
+    // clean up the button data that we allocated when the button is destroyed
+    SDLNW_Widget_AddOnDestroy(button, data, free);
 
     return button;
 }
 
-int main(void) {
+int main(int argc, char** argv) {
+    // no args, use relative path to find the ttf file.
+    assert(argc == 1);
+    const char* dir = dirname(argv[0]);
+    char* fontpath = NULL;
+    SDL_asprintf(&fontpath, "%s/jbm/fonts/ttf/JetBrainsMonoNL-Regular.ttf", dir);
+
+    // need to init ttf for font rendering
     SDL_Init(SDL_INIT_EVERYTHING);
     TTF_Init();
 
+    // 0 clicks to start with
     struct app_state state = { 0 };
-    font = SDLNW_Font_Create("./jbm/fonts/ttf/JetBrainsMonoNL-Regular.ttf", 32);
+    font = SDLNW_Font_Create(fontpath, 32);
     assert(font != NULL);
 
+    // create the composite widget
     SDLNW_Widget* widget = SDLNW_CreateCompositeWidget(&state, &build);
 
-    SDLNW_bootstrap(widget);    
+    // defer event handling to bootstrap
+    const SDLNW_BootstrapOptions options = (SDLNW_BootstrapOptions){.sdl_window_flags = SDL_WINDOW_RESIZABLE};
+    SDLNW_bootstrap(widget, options);    
+    // finished, clean and exit
+    
+    free(fontpath);
+    fontpath = NULL;
 
+    // root widget and font
     SDLNW_Widget_Destroy(widget);
     SDLNW_Font_Destroy(font);
 

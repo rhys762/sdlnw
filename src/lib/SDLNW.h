@@ -33,12 +33,19 @@ void SDLNW_Widget_Click(SDLNW_Widget* w, int x, int y);
 SDL_SystemCursor SDLNW_Widget_GetAppropriateCursor(SDLNW_Widget* w, int x, int y);
 void SDLNW_Widget_Destroy(SDLNW_Widget* w);
 // other helpers
+
 // adds data and callback which will be executed when the widget is destroyed
 // usefull for state cleanup
 void SDLNW_Widget_AddOnDestroy(SDLNW_Widget* w, void* data, void(*cb)(void* data));
 
 // trigger a rebuild of a composite widget
 void SDLNW_Widget_Recompose(SDLNW_Widget* w);
+
+// router functions
+void SDLNW_Widget_RouterPush(SDLNW_Widget* w, const char* path);
+void SDLNW_Widget_RouterReplace(SDLNW_Widget* w, const char* path);
+void SDLNW_Widget_RouterBack(SDLNW_Widget* w);
+void SDLNW_Widget_RouterAddRoute(SDLNW_Widget* w, const char* path, void* data, SDLNW_Widget* build_route(void* data, const char* path));
 
 // TODO Can this be moved to an internal .h file?
 struct struct_SDLNW_Widget {
@@ -87,8 +94,19 @@ SDLNW_Widget* SDLNW_CreateColumnWidget(SDLNW_WidgetList* list);
 SDLNW_Widget* SDLNW_CreateZStackWidget(SDLNW_WidgetList* list);
 SDLNW_Widget* SDLNW_CreateButtonWidget(SDLNW_Widget* child, void* data, void(*cb)(void* data, int x, int y));
 SDLNW_Widget* SDLNW_CreateCompositeWidget(void* data, SDLNW_Widget*(*cb)(SDLNW_Widget* parent, void*data));
+SDLNW_Widget* SDLNW_CreateRouterWidget(void* data, SDLNW_Widget* create_home_widget(void* data, const char* path));
+// SDLNW_Widget* SDLNW_CreateScrollWidget();
 // a label is intended for a single line of centered text.
 SDLNW_Widget* SDLNW_CreateLabelWidget(const char* text, SDLNW_Font* font);
+SDLNW_Widget* SDLNW_CreateParagraphWidget(const char* text, SDLNW_Font* font);
+
+// all optional and will be overriden by 'sensible' defaults if 0.
+typedef struct {
+    char* title;
+    int initial_width;
+    int initial_height;
+    int sdl_window_flags;
+} SDLNW_BootstrapOptions;
 
 /*
     Bootstrap is to make a 'simple' gui app easy, in theory a main should be able to
@@ -99,6 +117,6 @@ SDLNW_Widget* SDLNW_CreateLabelWidget(const char* text, SDLNW_Font* font);
     - quit sdl and ttf
 */
 
-void SDLNW_bootstrap(SDLNW_Widget* widget);
+void SDLNW_bootstrap(SDLNW_Widget* widget, SDLNW_BootstrapOptions options);
 
 #endif

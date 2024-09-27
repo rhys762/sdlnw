@@ -113,17 +113,19 @@ void SDLNW_WidgetList_Destroy(SDLNW_WidgetList* list) {
     free(list);
 }
 
-void SDLNW_bootstrap(SDLNW_Widget* widget) {
+void SDLNW_bootstrap(SDLNW_Widget* widget, SDLNW_BootstrapOptions options) {
     int running = 1;
     SDL_Event event;
 
-    int screen_width = 500;
-    int screen_height = 500;
+    int screen_width = options.initial_width ? options.initial_width : 500;
+    int screen_height = options.initial_height ? options.initial_height : 500;
+    const char* title = options.title ? options.title : "SDLNW App";
+    int window_flags = options.sdl_window_flags;
 
-    SDL_Window* window = SDL_CreateWindow("SDLNW App", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, screen_width, screen_height, 0);
+    SDL_Window* window = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, screen_width, screen_height, window_flags);
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, 0);
 
-    SDLNW_Widget_Size(widget, &(SDL_Rect) {.x = 0, .y = 0, .w = screen_width, .h = screen_width});
+    SDLNW_Widget_Size(widget, &(SDL_Rect) {.x = 0, .y = 0, .w = screen_width, .h = screen_height});
 
     int mouse_x, mouse_y;
 
@@ -144,7 +146,16 @@ void SDLNW_bootstrap(SDLNW_Widget* widget) {
                 SDL_Cursor* cursor =  SDL_CreateSystemCursor(widget_cursor);
                 SDL_SetCursor(cursor);
             }
+            else if (event.type == SDL_WINDOWEVENT) {
+                if (event.window.event == SDL_WINDOWEVENT_RESIZED || event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
+                    SDL_GetWindowSize(window, &screen_width, &screen_height);
+                    SDLNW_Widget_Size(widget, &(SDL_Rect) {.x = 0, .y = 0, .w = screen_width, .h = screen_height});
+                }
+            }
         }
+
+        // TODO delay? 60fps is probably fine.
+        // skip delay if resize, though its probably not required.
     }
 
     SDL_DestroyWindow(window);

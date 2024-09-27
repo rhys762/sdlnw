@@ -18,7 +18,9 @@ ninja
 
 # Tests and Examples
 
-TODO
+Tests are still todo.
+
+Example code is in src/examples. 
 
 # Resource Allocation
 
@@ -37,17 +39,25 @@ In no particular order.
 - [x] Button widget
 - [ ] Styling
 - [x] Label widget
-- [ ] Paragraph widget
+- [x] Paragraph widget
 - [ ] Text Field widget
 - [ ] Text Entry widget
 - [x] Z stack widget
-- [ ] Routing
+- [x] Routing
 - [x] widgets that can rebuild at runtime, composed of other widgets.
 - [x] Build system
 - [ ] Testing, inc renderering
 - [x] Mouse pointer updates, eg standard and clickable.
+- [ ] Scroll widget
+- [ ] Animation widget
+- [ ] Checkbox (maybe)
+- [ ] Slider (maybe)
 
 ## Misc
 
-- [ ] Create widget functions malloc multiple times, can be combined
-- [ ] Const correctness
+- Create widget functions malloc multiple times, can be combined
+- Const correctness
+- Font render caching
+- The composite recompose should assert that its actually got a composite widget, instead of being UB
+- Text selection
+- Clipboard
