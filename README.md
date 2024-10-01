@@ -1,3 +1,7 @@
+
+> [!WARNING]  
+> This library is early development and is both unstable and incomplete.
+
 # About
 
 SDL Nested Widgets is intended to be a small library for managing simple ui elements (like buttons) using the SDL libraries.
