@@ -34,7 +34,6 @@ static void size(SDLNW_Widget* w, const SDL_Rect* rect) {
     struct label_data* data = w->data;
     w->size = *rect;
 
-    // TODO center
     const int native_width = data->surface->w;
     const int native_height = data->surface->h;
 
@@ -74,12 +73,34 @@ static void destroy(SDLNW_Widget* w) {
     w->data = NULL;
 }
 
+static SDLNW_SizeRequest get_requested_size(SDLNW_Widget* w, enum SDLNW_SizingDimension locked_dimension, uint dimension_pixels) {
+    (void)dimension_pixels; // unused
+
+    struct label_data* data = w->data;
+
+    SDLNW_SizeRequest req = (SDLNW_SizeRequest){0};
+
+    if (data->surface != NULL) {
+        const int native_width = data->surface->w;
+        const int native_height = data->surface->h;
+
+        if (locked_dimension == SDLNW_SizingDimension_Height) {
+            req.pixels = native_width;
+        } else {
+            req.pixels = native_height;
+        }
+    }
+
+    return req;
+}
+
 SDLNW_Widget* SDLNW_CreateLabelWidget(const char* text, SDLNW_Font* font) {
     SDLNW_Widget* widget = create_default_widget();
 
     widget->vtable.draw = draw;
     widget->vtable.size = size;
     widget->vtable.destroy = destroy;
+    widget->vtable.get_requested_size = get_requested_size;
 
     widget->data = malloc(sizeof(struct label_data));
 

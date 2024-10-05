@@ -17,6 +17,8 @@ sdlnw_lib = static_library('SDLNW',
 'src/lib/placeholder.c',
 'src/lib/router.c',
 'src/lib/SDLNW.c',
+'src/lib/scroll.c',
+'src/lib/sizedbox.c',
 'src/lib/surface.c',
 'src/lib/zstack.c')
 
@@ -26,4 +28,4 @@ run_command('scripts/get_jbm.bash', check: true)
 # example programs
 executable('example_0_column', 'src/examples/0_column.c', dependencies: [sdl2_dep, ttf_dep], link_with: [sdlnw_lib])
 executable('example_1_composite_state', 'src/examples/1_composite_state.c', dependencies: [sdl2_dep, ttf_dep], link_with: [sdlnw_lib])
-executable('example_2_routing', 'src/examples/2_routing.c', dependencies: [sdl2_dep, ttf_dep], link_with: [sdlnw_lib])
+executable('example_2_routing_and_scrolling', 'src/examples/2_routing_and_scrolling.c', dependencies: [sdl2_dep, ttf_dep], link_with: [sdlnw_lib])

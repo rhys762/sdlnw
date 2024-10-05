@@ -12,11 +12,6 @@ static void draw(SDLNW_Widget* w, SDL_Renderer* renderer) {
     SDLNW_Widget_Draw(data->child, renderer);
 }
 
-static void click(SDLNW_Widget* w, int x, int y) {
-    struct composite_data* data = w->data;
-    SDLNW_Widget_Click(data->child, x, y);
-}
-
 static void size(SDLNW_Widget* w, const SDL_Rect* rect) {
     struct composite_data* data = w->data;
 
@@ -48,14 +43,27 @@ void SDLNW_Widget_Recompose(SDLNW_Widget* w) {
     SDLNW_Widget_Size(data->child, &w->size);
 }
 
+static SDLNW_SizeRequest get_requested_size(SDLNW_Widget* w, enum SDLNW_SizingDimension locked_dimension, uint dimension_pixels) {
+    struct composite_data* data = w->data;
+
+    return SDLNW_Widget_GetRequestedSize(data->child, locked_dimension, dimension_pixels);
+}
+
+static void trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, int* allow_passthrough) {
+    struct composite_data* data = widget->data;
+
+    SDLNW_Widget_TrickleDownEvent(data->child, type, event_meta, allow_passthrough);
+}
+
 SDLNW_Widget* SDLNW_CreateCompositeWidget(void* data, SDLNW_Widget*(*cb)(SDLNW_Widget* parent, void*data)) {
     SDLNW_Widget* widget = create_default_widget();
 
     widget->vtable.draw = draw;
     widget->vtable.size = size;
-    widget->vtable.click = click;
     widget->vtable.appropriate_cursor = appropriate_cursor;
     widget->vtable.destroy = destroy;
+    widget->vtable.get_requested_size = get_requested_size;
+    widget->vtable.trickle_down_event = trickle_down_event;
 
     widget->data = malloc(sizeof(struct composite_data));
     *((struct composite_data*)widget->data) = (struct composite_data){ .child = NULL, .data = data, .cb = cb};

@@ -19,9 +19,9 @@ int main(void) {
     // destroy the root widget.
     SDLNW_WidgetList *list = SDLNW_WidgetList_Create();
 
-    SDLNW_WidgetList_Push(list, SDLNW_CreateSurfaceWidget((SDLNW_Colour) {0xFF, 0x00, 0x00}));
-    SDLNW_WidgetList_Push(list, SDLNW_CreateSurfaceWidget((SDLNW_Colour) {0x00, 0xFF, 0x00}));
-    SDLNW_WidgetList_Push(list, SDLNW_CreateSurfaceWidget((SDLNW_Colour) {0x00, 0x00, 0xFF}));
+    SDLNW_WidgetList_Push(list, SDLNW_CreateSizedBoxWidget(SDLNW_CreateSurfaceWidget((SDLNW_Colour) {0xFF, 0x00, 0x00}), (SDLNW_SizedBoxWidget_Options){.height_shares = 1}));
+    SDLNW_WidgetList_Push(list, SDLNW_CreateSizedBoxWidget(SDLNW_CreateSurfaceWidget((SDLNW_Colour) {0x00, 0xFF, 0x00}), (SDLNW_SizedBoxWidget_Options){.height_shares = 1}));
+    SDLNW_WidgetList_Push(list, SDLNW_CreateSizedBoxWidget(SDLNW_CreateSurfaceWidget((SDLNW_Colour) {0x00, 0x00, 0xFF}), (SDLNW_SizedBoxWidget_Options){.height_shares = 1}));
 
     // our root widget
     SDLNW_Widget* column = SDLNW_CreateColumnWidget(list);

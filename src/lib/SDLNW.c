@@ -17,7 +17,11 @@ void SDLNW_Widget_Size(SDLNW_Widget* w, const SDL_Rect* rect) {
 }
 
 void SDLNW_Widget_Click(SDLNW_Widget* w, int x, int y) {
-    w->vtable.click(w, x, y);
+    SDLNW_Event_Click event = (SDLNW_Event_Click){
+        .x = x, .y = y
+    };
+
+    SDLNW_Widget_TrickleDownEvent(w, SDLNW_EventType_Click, &event, NULL);
 }
 
 struct on_destroy_pair {
@@ -99,6 +103,17 @@ SDL_SystemCursor SDLNW_Widget_GetAppropriateCursor(SDLNW_Widget* w, int x, int y
     return w->vtable.appropriate_cursor(w, x, y);
 }
 
+SDLNW_SizeRequest SDLNW_Widget_GetRequestedSize(SDLNW_Widget* w, enum SDLNW_SizingDimension locked_dimension, uint dimension_pixels) {
+    SDLNW_SizeRequest r = w->vtable.get_requested_size(w, locked_dimension, dimension_pixels);
+
+    // widget requested 0 pixels and 0 shares, give 1 share.
+    // if (r.pixels == 0 && r.shares == 0) {
+    //     r.shares = 1;
+    // }
+
+    return r;
+}
+
 void SDLNW_WidgetList_Destroy(SDLNW_WidgetList* list) {
     for (uint i = 0; i < list->len; i++) {
         SDLNW_Widget_Destroy(list->widgets[i]);
@@ -111,6 +126,37 @@ void SDLNW_WidgetList_Destroy(SDLNW_WidgetList* list) {
     list->len = 0;
 
     free(list);
+}
+
+void SDLNW_Widget_TrickleDownEvent(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, int* allow_passthrough) {
+    int allow = 1;
+
+    if (allow_passthrough == NULL) {
+        allow_passthrough = &allow;
+    }
+
+    if (*allow_passthrough) {
+        widget->vtable.trickle_down_event(widget, type, event_meta, allow_passthrough);
+    }
+
+    if (*allow_passthrough) {
+        switch(type) {
+            case SDLNW_EventType_Click:
+                widget->vtable.click(widget, event_meta, allow_passthrough);
+                break;
+            case SDLNW_EventType_MouseScroll:
+                widget->vtable.mouse_scroll(widget, event_meta, allow_passthrough);
+                break;
+        }
+    }
+}
+
+void SDLNW_Widget_MouseScroll(SDLNW_Widget* w, int x, int y) {
+    SDLNW_Event_MouseWheel event = (SDLNW_Event_MouseWheel){
+        .x = x, .y = y
+    };
+
+    SDLNW_Widget_TrickleDownEvent(w, SDLNW_EventType_MouseScroll, &event, NULL);
 }
 
 void SDLNW_bootstrap(SDLNW_Widget* widget, SDLNW_BootstrapOptions options) {
@@ -151,6 +197,9 @@ void SDLNW_bootstrap(SDLNW_Widget* widget, SDLNW_BootstrapOptions options) {
                     SDL_GetWindowSize(window, &screen_width, &screen_height);
                     SDLNW_Widget_Size(widget, &(SDL_Rect) {.x = 0, .y = 0, .w = screen_width, .h = screen_height});
                 }
+            }
+            else if (event.type == SDL_MOUSEWHEEL) {
+                SDLNW_Widget_MouseScroll(widget, event.wheel.x, event.wheel.y);
             }
         }
 

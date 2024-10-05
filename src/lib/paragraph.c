@@ -66,31 +66,30 @@ static struct text_pair* seperate_and_render_text(const char* original_text, SDL
     return root;
 }
 
+static void size_text(const struct text_pair* pair, int* cursor_x, int* cursor_y, const SDL_Rect* bounding_rect, SDL_Rect* text_destination) {
+    text_destination->w = pair->surface->w;
+    text_destination->h = pair->surface->h;
+
+    if (pair->dims.w + *cursor_x > bounding_rect->w && *cursor_x != bounding_rect->x) {
+        // newline
+        *cursor_x = bounding_rect->x;
+        *cursor_y += text_destination->h;
+    }
+
+    text_destination->x = *cursor_x;
+    text_destination->y = *cursor_y;
+
+    *cursor_x += pair->dims.w;
+}
+
 static void size_text_within(struct text_pair* pairs, const SDL_Rect* rect) {
     struct text_pair* pair = pairs;
     int cursor_x = rect->x;
     int cursor_y = rect->y;
-    int on_new_line = true;
 
     while(pair != NULL) {
-        pair->dims.w = pair->surface->w;
-        pair->dims.h = pair->surface->h;
-
-        if (pair->dims.w + cursor_x > rect->w && !on_new_line) {
-            // newline
-            cursor_x = rect->x;
-            cursor_y += pair->dims.h;
-            on_new_line = true;
-        }
-
-        pair->dims.x = cursor_x;
-        pair->dims.y = cursor_y;
-
-        cursor_x += pair->dims.w;
-
+        size_text(pair, &cursor_x, &cursor_y, rect, &pair->dims);
         pair = pair->next;
-
-        on_new_line = false;
     }
 }
 
@@ -149,12 +148,40 @@ static void destroy(SDLNW_Widget* w) {
     data->rendered_text = NULL;
 }
 
+static SDLNW_SizeRequest get_requested_size(SDLNW_Widget* w, enum SDLNW_SizingDimension locked_dimension, uint dimension_pixels) {
+    // TODO cache this?
+
+    if (locked_dimension == SDLNW_SizingDimension_Height) {
+        // meant to tell how wide based on height, TODO
+        return (SDLNW_SizeRequest){0};
+    }
+
+    struct paragraph_data* data = w->data;
+    SDLNW_SizeRequest req = (SDLNW_SizeRequest){0};
+    SDL_Rect bounding_rect = (SDL_Rect) {.w = dimension_pixels};
+    struct text_pair* pair = data->rendered_text;
+    int cursor_x = 0;
+    int cursor_y = 0;
+    SDL_Rect text_dest;
+
+    while(pair != NULL) {
+        size_text(pair, &cursor_x, &cursor_y, &bounding_rect, &text_dest);
+        pair = pair->next;
+    }
+
+    // height is going to be text_dest.y + text_dest.h
+    req.pixels = text_dest.y + text_dest.h;
+
+    return req;
+}
+
 SDLNW_Widget* SDLNW_CreateParagraphWidget(const char* text, SDLNW_Font* font) {
     SDLNW_Widget* widget = create_default_widget();
 
     widget->vtable.draw = draw;
     widget->vtable.size = size;
     widget->vtable.destroy = destroy;
+    widget->vtable.get_requested_size = get_requested_size;
 
     widget->data = malloc(sizeof(struct paragraph_data));
 

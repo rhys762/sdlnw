@@ -19,11 +19,47 @@ struct struct_SDLNW_Widget;
 typedef struct struct_SDLNW_Widget SDLNW_Widget;
 
 typedef struct {
+    // non-zero indicates the widget requests a set amount of pixels
+    uint pixels;
+    // non-zero indicates the widget requests as much space as possible.
+    // the widget will likely be allocted a weighted portion of space
+    // according to requested shares, so if this widget requests 1 share
+    // and another widget 2, then this widget will recieve a third of the
+    // avaliable space.
+    uint shares;
+} SDLNW_SizeRequest;
+
+enum SDLNW_SizingDimension {
+    SDLNW_SizingDimension_Width,
+    SDLNW_SizingDimension_Height
+};
+
+enum SDLNW_EventType {
+    SDLNW_EventType_Click,
+    SDLNW_EventType_MouseScroll
+};
+
+typedef struct {
+    int x, y;
+} SDLNW_Event_Click;
+
+// todo this is currently giving a delta,
+// probably needs mouse pos too
+typedef struct {
+    int x, y;
+} SDLNW_Event_MouseWheel;
+
+typedef struct {
     void (*draw)(SDLNW_Widget* w, SDL_Renderer* renderer);
     void (*size)(SDLNW_Widget* w, const SDL_Rect* rect);
-    void (*click)(SDLNW_Widget* w, int x, int y);
     SDL_SystemCursor (*appropriate_cursor)(SDLNW_Widget* w, int x, int y);
     void (*destroy)(SDLNW_Widget* w);
+    // based on the size of a locked dimension, how big do you need for the other dimension?
+    SDLNW_SizeRequest (*get_requested_size)(SDLNW_Widget* w, enum SDLNW_SizingDimension locked_dimension, uint dimension_pixels);
+
+    void (*trickle_down_event)(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, int* allow_passthrough);
+    void (*click)(SDLNW_Widget* w, SDLNW_Event_Click* event, int* allow_passthrough);
+    void (*mouse_scroll)(SDLNW_Widget* widget, SDLNW_Event_MouseWheel* event, int* allow_passthrough);
 } SDLNW_Widget_VTable;
 
 // cleaner v-table calls
@@ -31,7 +67,10 @@ void SDLNW_Widget_Draw(SDLNW_Widget* w, SDL_Renderer* renderer);
 void SDLNW_Widget_Size(SDLNW_Widget* w, const SDL_Rect* rect);
 void SDLNW_Widget_Click(SDLNW_Widget* w, int x, int y);
 SDL_SystemCursor SDLNW_Widget_GetAppropriateCursor(SDLNW_Widget* w, int x, int y);
+SDLNW_SizeRequest SDLNW_Widget_GetRequestedSize(SDLNW_Widget* w, enum SDLNW_SizingDimension locked_dimension, uint dimension_pixels);
 void SDLNW_Widget_Destroy(SDLNW_Widget* w);
+void SDLNW_Widget_TrickleDownEvent(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, int* allow_passthrough);
+void SDLNW_Widget_MouseScroll(SDLNW_Widget* w, int x, int y);
 // other helpers
 
 // adds data and callback which will be executed when the widget is destroyed
@@ -86,19 +125,31 @@ void SDLNW_Font_Destroy(SDLNW_Font* font);
     Widget creators
 */
 
+// a black cross on white background
 SDLNW_Widget* SDLNW_CreatePlaceholderWidget(void);
+// a coloured box
 SDLNW_Widget* SDLNW_CreateSurfaceWidget(SDLNW_Colour colour);
 // list is displayed top down
 SDLNW_Widget* SDLNW_CreateColumnWidget(SDLNW_WidgetList* list);
 // first on bottom, last on top
 SDLNW_Widget* SDLNW_CreateZStackWidget(SDLNW_WidgetList* list);
+// TODO, replace with generic gesture widget?
 SDLNW_Widget* SDLNW_CreateButtonWidget(SDLNW_Widget* child, void* data, void(*cb)(void* data, int x, int y));
 SDLNW_Widget* SDLNW_CreateCompositeWidget(void* data, SDLNW_Widget*(*cb)(SDLNW_Widget* parent, void*data));
 SDLNW_Widget* SDLNW_CreateRouterWidget(void* data, SDLNW_Widget* create_home_widget(void* data, const char* path));
-// SDLNW_Widget* SDLNW_CreateScrollWidget();
+SDLNW_Widget* SDLNW_CreateScrollWidget(SDLNW_Widget* child);
 // a label is intended for a single line of centered text.
 SDLNW_Widget* SDLNW_CreateLabelWidget(const char* text, SDLNW_Font* font);
+// paragraph is for longer sections of text
 SDLNW_Widget* SDLNW_CreateParagraphWidget(const char* text, SDLNW_Font* font);
+// forcefully sizes its child
+typedef struct {
+    int width_pixels;
+    int width_shares;
+    int height_pixels;
+    int height_shares;
+} SDLNW_SizedBoxWidget_Options;
+SDLNW_Widget* SDLNW_CreateSizedBoxWidget(SDLNW_Widget* child, SDLNW_SizedBoxWidget_Options opts);
 
 // all optional and will be overriden by 'sensible' defaults if 0.
 typedef struct {

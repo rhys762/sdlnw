@@ -24,14 +24,6 @@ static void size(SDLNW_Widget* w, const SDL_Rect* rect) {
     }
 }
 
-static void click(SDLNW_Widget* w, int x, int y) {
-    struct zstack_data* data = w->data;
-
-    for (uint i = 0; i < data->list->len; i++) {
-        SDLNW_Widget_Click(data->list->widgets[i], x, y);
-    }
-}
-
 static SDL_SystemCursor appropriate_cursor(SDLNW_Widget* w, int x, int y) {
     struct zstack_data* data = w->data;
     SDL_SystemCursor cursor = SDL_SYSTEM_CURSOR_ARROW;
@@ -54,14 +46,56 @@ static void destroy(SDLNW_Widget* w) {
     w->data = NULL;
 }
 
+static SDLNW_SizeRequest get_requested_size(SDLNW_Widget* w, enum SDLNW_SizingDimension locked_dimension, uint dimension_pixels) {
+    struct zstack_data* data = w->data;
+
+    int pixels = 0, shares = 0;
+
+    for (uint i = 0; i < data->list->len; i++) {
+        SDLNW_SizeRequest req = SDLNW_Widget_GetRequestedSize(data->list->widgets[i], locked_dimension, dimension_pixels);
+        if (req.pixels) {
+            pixels += req.pixels;
+        }
+
+        if (req.shares) {
+            shares += req.shares;
+        }
+    }
+
+
+    // return 
+    SDLNW_SizeRequest req = (SDLNW_SizeRequest) {0};
+
+    req.shares = shares;
+    req.pixels = pixels;
+
+    return req;
+}
+
+static void trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, int* allow_passthrough) {
+    struct zstack_data* data = widget->data;
+
+    if (data->list->len == 0) {
+        return;
+    }
+
+    uint i = data->list->len - 1;
+
+    do {
+        SDLNW_Widget_TrickleDownEvent(data->list->widgets[i], type, event_meta, allow_passthrough);
+        i--;
+    } while (i != 0);
+}
+
 SDLNW_Widget* SDLNW_CreateZStackWidget(SDLNW_WidgetList* list) {
     SDLNW_Widget* widget = create_default_widget();
 
     widget->vtable.draw = draw;
     widget->vtable.size = size;
-    widget->vtable.click = click;
     widget->vtable.appropriate_cursor = appropriate_cursor;
     widget->vtable.destroy = destroy;
+    widget->vtable.get_requested_size = get_requested_size;
+    widget->vtable.trickle_down_event = trickle_down_event;
 
     widget->data = malloc(sizeof(struct zstack_data));
     *((struct zstack_data*)widget->data) = (struct zstack_data){ .list = list };
