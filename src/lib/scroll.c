@@ -1,5 +1,6 @@
 #include "SDLNW.h"
 #include "internal_helpers.h"
+#include <SDL2/SDL_blendmode.h>
 #include <SDL2/SDL_render.h>
 
 struct scroll_data {
@@ -10,6 +11,9 @@ struct scroll_data {
     int texture_width, texture_height;
 
     SDL_Rect window;
+    int y_window_max;
+
+    SDL_Rect y_scroll_bar;
 };
 
 static void draw(SDLNW_Widget* w, SDL_Renderer* renderer) {
@@ -26,6 +30,16 @@ static void draw(SDLNW_Widget* w, SDL_Renderer* renderer) {
 
     SDL_SetRenderTarget(renderer, NULL);
     SDL_RenderCopy(renderer, data->texture, &data->window, &w->size);
+
+    // y scroll bar
+    if (data->y_scroll_bar.h) {
+        SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xAA);
+        SDL_BlendMode mode;
+        SDL_GetRenderDrawBlendMode(renderer, &mode);
+        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+        SDL_RenderFillRect(renderer, &data->y_scroll_bar);
+        SDL_SetRenderDrawBlendMode(renderer, mode);
+    }
 }
 
 static int max(int a, int b) {
@@ -55,12 +69,18 @@ static void size(SDLNW_Widget* w, const SDL_Rect* rect) {
         .h = rect->h
     };
 
-    // TODO horizontal scroll
-
-    // vertical scroll
+    // setup vertical scroll
+    data->y_window_max = max(data->texture_height - data->window.h, 0);
+    data->y_scroll_bar = (SDL_Rect){0};
     if (data->texture_height > rect->h) {
-        printf("requires scroll bar!\n");
+        float y_proportion = (float)rect->h / (float)data->texture_height;
+
+        data->y_scroll_bar.h = (int)(y_proportion * (float)rect->h);
+        data->y_scroll_bar.w = 5;
+        data->y_scroll_bar.x = rect->x + rect->w - data->y_scroll_bar.w;
     }
+
+    // TODO horizontal scroll
 }
 
 static void destroy(SDLNW_Widget* w) {
@@ -109,7 +129,7 @@ static void trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType type, 
 static void mouse_scroll(SDLNW_Widget* widget, SDLNW_Event_MouseWheel* event, int* allow_passthrough) {   
     struct scroll_data* data = widget->data;
 
-    int delta_y = -10 * event->y;
+    int delta_y = -20 * event->y;
     
     *allow_passthrough = 0;
     data->window.y += delta_y;
@@ -118,11 +138,16 @@ static void mouse_scroll(SDLNW_Widget* widget, SDLNW_Event_MouseWheel* event, in
         *allow_passthrough = 1;
     }
 
-    int y_max = max(data->texture_height - data->window.h, 0);
-    if (data->window.y > y_max) {
-        data->window.y = y_max;
+    if (data->window.y > data->y_window_max) {
+        data->window.y = data->y_window_max;
         *allow_passthrough = 1;
     }
+
+    float y_proportion_scrolled = (float)data->window.y / (float)data->y_window_max;
+
+    int y_scroll_max = widget->size.h - data->y_scroll_bar.h;
+
+    data->y_scroll_bar.y = (int)(y_proportion_scrolled * (float)y_scroll_max) + widget->size.y;
 }
 
 SDLNW_Widget* SDLNW_CreateScrollWidget(SDLNW_Widget* child) {

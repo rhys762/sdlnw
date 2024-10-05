@@ -56,7 +56,7 @@ In no particular order.
 - [ ] Animation widget
 - [ ] Checkbox (maybe)
 - [ ] Slider (maybe)
-- [ ] Sized box
+- [x] Sized box
 - [ ] Center box
 
 ## Misc
