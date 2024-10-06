@@ -72,7 +72,7 @@ static SDLNW_SizeRequest get_requested_size(SDLNW_Widget* w, enum SDLNW_SizingDi
     return req;
 }
 
-static void trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, int* allow_passthrough) {
+static void trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, bool* allow_passthrough) {
     struct zstack_data* data = widget->data;
 
     if (data->list->len == 0) {

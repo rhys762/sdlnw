@@ -10,7 +10,7 @@ static void size(SDLNW_Widget* w, const SDL_Rect* rect) {
     w->size = *rect;
 }
 
-static void click(SDLNW_Widget* w, SDLNW_Event_Click* event, int* allow_passthrough) {
+static void click(SDLNW_Widget* w, SDLNW_Event_Click* event, bool* allow_passthrough) {
     (void)w; // unused
     (void)event; // unused
     (void)allow_passthrough; // unused
@@ -38,17 +38,23 @@ static SDLNW_SizeRequest get_requested_size(SDLNW_Widget* w, enum SDLNW_SizingDi
     return req;
 }
 
-static void trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, int* allow_passthrough) {
+static void trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, bool* allow_passthrough) {
     (void)widget; // unused
     (void)type; // unused
     (void)event_meta; // unused
     (void)allow_passthrough; // unused
 }
 
-static void mouse_scroll(SDLNW_Widget* widget, SDLNW_Event_MouseWheel* event, int* allow_passthrough) {   
+static void mouse_scroll(SDLNW_Widget* widget, SDLNW_Event_MouseWheel* event, bool* allow_passthrough) {   
     (void)widget; // unused
     (void)event; // unused
     (void)allow_passthrough; // unused
+}
+
+static void drag(SDLNW_Widget* widget, SDLNW_Event_Drag* event, bool* allow_passthrough) {
+    (void)widget; // ununsed
+    (void)event; // ununsed
+    (void)allow_passthrough; // ununsed
 }
 
 static void init_default_vtable(SDLNW_Widget_VTable* table) {
@@ -60,6 +66,7 @@ static void init_default_vtable(SDLNW_Widget_VTable* table) {
     table->get_requested_size = get_requested_size;
     table->trickle_down_event = trickle_down_event;
     table->mouse_scroll = mouse_scroll;
+    table->drag = drag;
 }
 
 // init default widget

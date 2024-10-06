@@ -12,7 +12,7 @@ static void draw(SDLNW_Widget* w, SDL_Renderer* renderer) {
     SDLNW_Widget_Draw(data->child, renderer);
 }
 
-static void click(SDLNW_Widget* w, SDLNW_Event_Click* event, int* allow_passthrough) {
+static void click(SDLNW_Widget* w, SDLNW_Event_Click* event, bool* allow_passthrough) {
     struct button_data* data = w->data;
 
     if (is_point_within_rect(event->x, event->y, &w->size)) {
@@ -50,7 +50,7 @@ static void destroy(SDLNW_Widget* w) {
     data->data = NULL;
 }
 
-static void trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, int* allow_passthrough) {
+static void trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, bool* allow_passthrough) {
     struct button_data* data = widget->data;
     SDLNW_Widget_TrickleDownEvent(data->child, type, event_meta, allow_passthrough);
 }

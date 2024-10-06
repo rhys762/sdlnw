@@ -52,7 +52,7 @@ In no particular order.
 - [x] Build system
 - [ ] Testing, inc renderering
 - [x] Mouse pointer updates, eg standard and clickable.
-- [ ] Scroll widget
+- [x] Scroll widget
 - [ ] Animation widget
 - [ ] Checkbox (maybe)
 - [ ] Slider (maybe)

@@ -4,7 +4,7 @@
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_pixels.h>
-
+#include <stdbool.h>
 /*
     Public declerations for the SDLNW library.
 */
@@ -36,7 +36,8 @@ enum SDLNW_SizingDimension {
 
 enum SDLNW_EventType {
     SDLNW_EventType_Click,
-    SDLNW_EventType_MouseScroll
+    SDLNW_EventType_MouseScroll,
+    SDLNW_EventType_MouseDrag,
 };
 
 typedef struct {
@@ -50,6 +51,11 @@ typedef struct {
 } SDLNW_Event_MouseWheel;
 
 typedef struct {
+    int mouse_x, mouse_y, origin_x, origin_y;
+    bool still_down;
+} SDLNW_Event_Drag;
+
+typedef struct {
     void (*draw)(SDLNW_Widget* w, SDL_Renderer* renderer);
     void (*size)(SDLNW_Widget* w, const SDL_Rect* rect);
     SDL_SystemCursor (*appropriate_cursor)(SDLNW_Widget* w, int x, int y);
@@ -57,19 +63,22 @@ typedef struct {
     // based on the size of a locked dimension, how big do you need for the other dimension?
     SDLNW_SizeRequest (*get_requested_size)(SDLNW_Widget* w, enum SDLNW_SizingDimension locked_dimension, uint dimension_pixels);
 
-    void (*trickle_down_event)(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, int* allow_passthrough);
-    void (*click)(SDLNW_Widget* w, SDLNW_Event_Click* event, int* allow_passthrough);
-    void (*mouse_scroll)(SDLNW_Widget* widget, SDLNW_Event_MouseWheel* event, int* allow_passthrough);
+    // user event handling
+    void (*trickle_down_event)(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, bool* allow_passthrough);
+    void (*click)(SDLNW_Widget* w, SDLNW_Event_Click* event, bool* allow_passthrough);
+    void (*mouse_scroll)(SDLNW_Widget* widget, SDLNW_Event_MouseWheel* event, bool* allow_passthrough);
+    void (*drag)(SDLNW_Widget* widget, SDLNW_Event_Drag* event, bool* allow_passthrough);
 } SDLNW_Widget_VTable;
 
 // cleaner v-table calls
 void SDLNW_Widget_Draw(SDLNW_Widget* w, SDL_Renderer* renderer);
 void SDLNW_Widget_Size(SDLNW_Widget* w, const SDL_Rect* rect);
 void SDLNW_Widget_Click(SDLNW_Widget* w, int x, int y);
+void SDLNW_Widget_Drag(SDLNW_Widget* w, int mouse_x_start, int mouse_y_start, int mouse_x, int mouse_y, bool still_down);
 SDL_SystemCursor SDLNW_Widget_GetAppropriateCursor(SDLNW_Widget* w, int x, int y);
 SDLNW_SizeRequest SDLNW_Widget_GetRequestedSize(SDLNW_Widget* w, enum SDLNW_SizingDimension locked_dimension, uint dimension_pixels);
 void SDLNW_Widget_Destroy(SDLNW_Widget* w);
-void SDLNW_Widget_TrickleDownEvent(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, int* allow_passthrough);
+void SDLNW_Widget_TrickleDownEvent(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, bool* allow_passthrough);
 void SDLNW_Widget_MouseScroll(SDLNW_Widget* w, int x, int y);
 // other helpers
 

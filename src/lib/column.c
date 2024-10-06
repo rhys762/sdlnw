@@ -111,7 +111,7 @@ static void destroy(SDLNW_Widget* w) {
     w->data = NULL;
 }
 
-static void trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, int* allow_passthrough) {
+static void trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, bool* allow_passthrough) {
     struct column_data* data = widget->data;
 
     for (uint i = 0; i < data->list->len; i++) {

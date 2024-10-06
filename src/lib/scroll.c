@@ -14,6 +14,8 @@ struct scroll_data {
     int y_window_max;
 
     SDL_Rect y_scroll_bar;
+    bool dragging_y_scroll;
+    int start_scroll_drag_x, start_scroll_drag_y;
 };
 
 static void draw(SDLNW_Widget* w, SDL_Renderer* renderer) {
@@ -76,7 +78,7 @@ static void size(SDLNW_Widget* w, const SDL_Rect* rect) {
         float y_proportion = (float)rect->h / (float)data->texture_height;
 
         data->y_scroll_bar.h = (int)(y_proportion * (float)rect->h);
-        data->y_scroll_bar.w = 5;
+        data->y_scroll_bar.w = 10;
         data->y_scroll_bar.x = rect->x + rect->w - data->y_scroll_bar.w;
     }
 
@@ -104,7 +106,7 @@ static SDL_SystemCursor appropriate_cursor(SDLNW_Widget* w, int x, int y) {
 }
 
 // TODO adjust x y
-static void trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, int* allow_passthrough) {
+static void trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, bool* allow_passthrough) {
     struct scroll_data* data = widget->data;
 
     SDLNW_Event_Click click_event = {0};
@@ -126,7 +128,7 @@ static void trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType type, 
 }
 
 // TODO x
-static void mouse_scroll(SDLNW_Widget* widget, SDLNW_Event_MouseWheel* event, int* allow_passthrough) {   
+static void mouse_scroll(SDLNW_Widget* widget, SDLNW_Event_MouseWheel* event, bool* allow_passthrough) {   
     struct scroll_data* data = widget->data;
 
     int delta_y = -20 * event->y;
@@ -150,6 +152,41 @@ static void mouse_scroll(SDLNW_Widget* widget, SDLNW_Event_MouseWheel* event, in
     data->y_scroll_bar.y = (int)(y_proportion_scrolled * (float)y_scroll_max) + widget->size.y;
 }
 
+static void drag(SDLNW_Widget* widget, SDLNW_Event_Drag* event, bool* allow_passthrough) {
+    (void)allow_passthrough; // unused for now, revisit when have more complicated examples since I can't forsee how it should work.
+    struct scroll_data* data = widget->data;
+
+    if (!data->dragging_y_scroll) {
+        if (is_point_within_rect(event->mouse_x, event->mouse_y, &data->y_scroll_bar) && is_point_within_rect(event->origin_x, event->origin_y, &data->y_scroll_bar)) {
+            data->dragging_y_scroll = true;
+            data->start_scroll_drag_y = data->y_scroll_bar.y;
+        }
+    }
+
+    if (data->dragging_y_scroll) {
+        data->y_scroll_bar.y = data->start_scroll_drag_y + event->mouse_y - event->origin_y;
+
+        if (data->y_scroll_bar.y < widget->size.y) {
+            data->y_scroll_bar.y = widget->size.y;
+        }
+
+        int scroll_max = widget->size.y + widget->size.h - data->y_scroll_bar.h;
+        if (data->y_scroll_bar.y > scroll_max) {
+            data->y_scroll_bar.y = scroll_max;
+        }
+
+        int y_scroll_max = widget->size.y + widget->size.h - data->y_scroll_bar.h;
+        float scrolled_proportion = (float)data->y_scroll_bar.y / (float)y_scroll_max;
+
+        float max_scroll = (float)(data->texture_height - data->window.h);
+        data->window.y = (int)(scrolled_proportion * max_scroll);
+    }
+
+    if (!event->still_down) {
+        data->dragging_y_scroll = false;
+    }
+}
+
 SDLNW_Widget* SDLNW_CreateScrollWidget(SDLNW_Widget* child) {
     SDLNW_Widget* widget = create_default_widget();
 
@@ -157,10 +194,9 @@ SDLNW_Widget* SDLNW_CreateScrollWidget(SDLNW_Widget* child) {
     widget->vtable.size = size;
     widget->vtable.destroy = destroy;
     widget->vtable.appropriate_cursor = appropriate_cursor;
-    // TODO, but for now default fine
-    // widget->vtable.get_requested_size = get_requested_size;
     widget->vtable.trickle_down_event = trickle_down_event;
     widget->vtable.mouse_scroll = mouse_scroll;
+    widget->vtable.drag = drag;
 
     struct scroll_data* data = malloc(sizeof(struct scroll_data));
     *data = (struct scroll_data) {.child = child};

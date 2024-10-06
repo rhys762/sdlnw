@@ -24,6 +24,12 @@ void SDLNW_Widget_Click(SDLNW_Widget* w, int x, int y) {
     SDLNW_Widget_TrickleDownEvent(w, SDLNW_EventType_Click, &event, NULL);
 }
 
+void SDLNW_Widget_Drag(SDLNW_Widget* w, int mouse_x_start, int mouse_y_start, int mouse_x, int mouse_y, bool still_down) {
+    SDLNW_Event_Drag event = {.origin_x = mouse_x_start, .origin_y = mouse_y_start, .mouse_x = mouse_x, .mouse_y = mouse_y, .still_down = still_down};
+
+    SDLNW_Widget_TrickleDownEvent(w, SDLNW_EventType_MouseDrag, &event, NULL);
+}
+
 struct on_destroy_pair {
     void* data;
     void(*cb)(void* data);
@@ -128,8 +134,8 @@ void SDLNW_WidgetList_Destroy(SDLNW_WidgetList* list) {
     free(list);
 }
 
-void SDLNW_Widget_TrickleDownEvent(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, int* allow_passthrough) {
-    int allow = 1;
+void SDLNW_Widget_TrickleDownEvent(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, bool* allow_passthrough) {
+    bool allow = true;
 
     if (allow_passthrough == NULL) {
         allow_passthrough = &allow;
@@ -147,6 +153,9 @@ void SDLNW_Widget_TrickleDownEvent(SDLNW_Widget* widget, enum SDLNW_EventType ty
             case SDLNW_EventType_MouseScroll:
                 widget->vtable.mouse_scroll(widget, event_meta, allow_passthrough);
                 break;
+            case SDLNW_EventType_MouseDrag:
+                widget->vtable.drag(widget, event_meta, allow_passthrough);
+                break;
         }
     }
 }
@@ -157,6 +166,10 @@ void SDLNW_Widget_MouseScroll(SDLNW_Widget* w, int x, int y) {
     };
 
     SDLNW_Widget_TrickleDownEvent(w, SDLNW_EventType_MouseScroll, &event, NULL);
+}
+
+static int square_sum(int a, int b) {
+    return a * a + b * b;
 }
 
 void SDLNW_bootstrap(SDLNW_Widget* widget, SDLNW_BootstrapOptions options) {
@@ -173,7 +186,8 @@ void SDLNW_bootstrap(SDLNW_Widget* widget, SDLNW_BootstrapOptions options) {
 
     SDLNW_Widget_Size(widget, &(SDL_Rect) {.x = 0, .y = 0, .w = screen_width, .h = screen_height});
 
-    int mouse_x, mouse_y;
+    int mouse_x_down, mouse_y_down, mouse_x, mouse_y;
+    bool mouse_is_down = false;
 
     while (running) {
         SDLNW_Widget_Draw(widget, renderer);
@@ -184,13 +198,32 @@ void SDLNW_bootstrap(SDLNW_Widget* widget, SDLNW_BootstrapOptions options) {
                 running = 0;
             }
             else if (event.type == SDL_MOUSEBUTTONDOWN) {
-                SDLNW_Widget_Click(widget, mouse_x, mouse_y);
+                mouse_x_down = event.button.x;
+                mouse_y_down = event.button.y;
+                mouse_is_down = true;
+            }
+            else if (event.type == SDL_MOUSEBUTTONUP) {
+                mouse_x = event.button.x;
+                mouse_y = event.button.y;
+                mouse_is_down = false;
+
+                if (square_sum(mouse_x_down - mouse_x, mouse_y_down - mouse_y) < 25) {
+                    SDLNW_Widget_Click(widget, mouse_x, mouse_y);
+                } else {
+                    SDLNW_Widget_Drag(widget, mouse_x_down, mouse_y_down, mouse_x, mouse_y, mouse_is_down);
+                }
             }
             else if (event.type == SDL_MOUSEMOTION) {
-                SDL_GetMouseState(&mouse_x, &mouse_y);
-                SDL_SystemCursor widget_cursor = SDLNW_Widget_GetAppropriateCursor(widget, mouse_x, mouse_y);
-                SDL_Cursor* cursor =  SDL_CreateSystemCursor(widget_cursor);
-                SDL_SetCursor(cursor);
+                mouse_x = event.motion.x;
+                mouse_y = event.motion.y;
+
+                if (mouse_is_down) {
+                    SDLNW_Widget_Drag(widget, mouse_x_down, mouse_y_down, mouse_x, mouse_y, mouse_is_down);
+                } else {
+                    SDL_SystemCursor widget_cursor = SDLNW_Widget_GetAppropriateCursor(widget, mouse_x, mouse_y);
+                    SDL_Cursor* cursor =  SDL_CreateSystemCursor(widget_cursor);
+                    SDL_SetCursor(cursor);
+                }                
             }
             else if (event.type == SDL_WINDOWEVENT) {
                 if (event.window.event == SDL_WINDOWEVENT_RESIZED || event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
