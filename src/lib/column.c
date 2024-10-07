@@ -5,7 +5,7 @@ struct column_data {
     SDLNW_WidgetList* list;
 };
 
-static void draw(SDLNW_Widget* w, SDL_Renderer* renderer) {
+static void column_draw(SDLNW_Widget* w, SDL_Renderer* renderer) {
     struct column_data* data = w->data;
 
     for (uint i = 0; i < data->list->len; i++) {
@@ -13,8 +13,7 @@ static void draw(SDLNW_Widget* w, SDL_Renderer* renderer) {
     }
 }
 
-// TODO, different sizing strategies.
-static void size(SDLNW_Widget* w, const SDL_Rect* rect) {
+static void column_size(SDLNW_Widget* w, const SDL_Rect* rect) {
     struct column_data* data = w->data;
 
     w->size = *rect;
@@ -52,7 +51,7 @@ static void size(SDLNW_Widget* w, const SDL_Rect* rect) {
     }
 }
 
-static SDL_SystemCursor appropriate_cursor(SDLNW_Widget* w, int x, int y) {
+static SDL_SystemCursor column_appropriate_cursor(SDLNW_Widget* w, int x, int y) {
     struct column_data* data = w->data;
     SDL_SystemCursor cursor = SDL_SYSTEM_CURSOR_ARROW;
 
@@ -70,7 +69,7 @@ static uint max(uint a, uint b) {
     return (a > b) ? a : b;
 }
 
-static SDLNW_SizeRequest get_requested_size(SDLNW_Widget* w, enum SDLNW_SizingDimension locked_dimension, uint dimension_pixels) {
+static SDLNW_SizeRequest column_get_requested_size(SDLNW_Widget* w, enum SDLNW_SizingDimension locked_dimension, uint dimension_pixels) {
     struct column_data* data = w->data;
 
     uint len = data->list->len;
@@ -101,7 +100,7 @@ static SDLNW_SizeRequest get_requested_size(SDLNW_Widget* w, enum SDLNW_SizingDi
     return req;
 }
 
-static void destroy(SDLNW_Widget* w) {
+static void column_destroy(SDLNW_Widget* w) {
     struct column_data* data = w->data;
 
     SDLNW_WidgetList_Destroy(data->list);
@@ -111,7 +110,7 @@ static void destroy(SDLNW_Widget* w) {
     w->data = NULL;
 }
 
-static void trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, bool* allow_passthrough) {
+static void column_trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, bool* allow_passthrough) {
     struct column_data* data = widget->data;
 
     for (uint i = 0; i < data->list->len; i++) {
@@ -122,12 +121,12 @@ static void trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType type, 
 SDLNW_Widget* SDLNW_CreateColumnWidget(SDLNW_WidgetList* list) {
     SDLNW_Widget* widget = create_default_widget();
 
-    widget->vtable.draw = draw;
-    widget->vtable.size = size;
-    widget->vtable.appropriate_cursor = appropriate_cursor;
-    widget->vtable.destroy = destroy;
-    widget->vtable.get_requested_size = get_requested_size;
-    widget->vtable.trickle_down_event = trickle_down_event;
+    widget->vtable.draw = column_draw;
+    widget->vtable.size = column_size;
+    widget->vtable.appropriate_cursor = column_appropriate_cursor;
+    widget->vtable.destroy = column_destroy;
+    widget->vtable.get_requested_size = column_get_requested_size;
+    widget->vtable.trickle_down_event = column_trickle_down_event;
 
     widget->data = malloc(sizeof(struct column_data));
     *((struct column_data*)widget->data) = (struct column_data){ .list = list };

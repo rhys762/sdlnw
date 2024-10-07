@@ -1,6 +1,7 @@
 #include "SDLNW.h"
 #include "internal_helpers.h"
 #include <SDL2/SDL_render.h>
+#include <SDL2/SDL_surface.h>
 #include <assert.h>
 #include <stdbool.h>
 
@@ -117,6 +118,11 @@ static void destroy_text_pairs(struct text_pair* pairs) {
         pairs->next = NULL;
     }
 
+    SDL_FreeSurface(pairs->surface);
+    pairs->surface = NULL;
+    SDL_DestroyTexture(pairs->texture);
+    pairs->texture = NULL;
+
     free((void*)pairs->text);
     free(pairs);
 }
@@ -127,28 +133,29 @@ struct paragraph_data {
     struct text_pair* rendered_text;
 };
 
-
-
-static void draw(SDLNW_Widget* w, SDL_Renderer* renderer) {
+static void paragraph_draw(SDLNW_Widget* w, SDL_Renderer* renderer) {
     struct paragraph_data* data = w->data;
     render_text_pairs(data->rendered_text, renderer);
 }
 
-static void size(SDLNW_Widget* w, const SDL_Rect* rect) {
+static void paragraph_size(SDLNW_Widget* w, const SDL_Rect* rect) {
     struct paragraph_data* data = w->data;
 
     w->size = *rect;
     size_text_within(data->rendered_text, rect);
 }
 
-static void destroy(SDLNW_Widget* w) {
+static void paragraph_destroy(SDLNW_Widget* w) {
     struct paragraph_data* data = w->data;
 
     destroy_text_pairs(data->rendered_text);
     data->rendered_text = NULL;
+
+    free(w->data);
+    w->data = NULL;
 }
 
-static SDLNW_SizeRequest get_requested_size(SDLNW_Widget* w, enum SDLNW_SizingDimension locked_dimension, uint dimension_pixels) {
+static SDLNW_SizeRequest paragraph_get_requested_size(SDLNW_Widget* w, enum SDLNW_SizingDimension locked_dimension, uint dimension_pixels) {
     // TODO cache this?
 
     if (locked_dimension == SDLNW_SizingDimension_Height) {
@@ -178,10 +185,10 @@ static SDLNW_SizeRequest get_requested_size(SDLNW_Widget* w, enum SDLNW_SizingDi
 SDLNW_Widget* SDLNW_CreateParagraphWidget(const char* text, SDLNW_Font* font) {
     SDLNW_Widget* widget = create_default_widget();
 
-    widget->vtable.draw = draw;
-    widget->vtable.size = size;
-    widget->vtable.destroy = destroy;
-    widget->vtable.get_requested_size = get_requested_size;
+    widget->vtable.draw = paragraph_draw;
+    widget->vtable.size = paragraph_size;
+    widget->vtable.destroy = paragraph_destroy;
+    widget->vtable.get_requested_size = paragraph_get_requested_size;
 
     widget->data = malloc(sizeof(struct paragraph_data));
 

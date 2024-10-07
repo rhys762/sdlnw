@@ -18,7 +18,7 @@ struct scroll_data {
     int start_scroll_drag_x, start_scroll_drag_y;
 };
 
-static void draw(SDLNW_Widget* w, SDL_Renderer* renderer) {
+static void scroll_draw(SDLNW_Widget* w, SDL_Renderer* renderer) {
     struct scroll_data* data = w->data;
 
     if (data->texture == NULL) {
@@ -48,7 +48,7 @@ static int max(int a, int b) {
     return (a > b) ? a : b;
 }
 
-static void size(SDLNW_Widget* w, const SDL_Rect* rect) {
+static void scroll_size(SDLNW_Widget* w, const SDL_Rect* rect) {
     struct scroll_data* data = w->data;
 
     w->size = *rect;
@@ -85,7 +85,7 @@ static void size(SDLNW_Widget* w, const SDL_Rect* rect) {
     // TODO horizontal scroll
 }
 
-static void destroy(SDLNW_Widget* w) {
+static void scroll_destroy(SDLNW_Widget* w) {
     struct scroll_data* data = w->data;
 
     SDLNW_Widget_Destroy(data->child);
@@ -98,7 +98,7 @@ static void destroy(SDLNW_Widget* w) {
 }
 
 // TODO adjust x y
-static SDL_SystemCursor appropriate_cursor(SDLNW_Widget* w, int x, int y) {
+static SDL_SystemCursor scroll_appropriate_cursor(SDLNW_Widget* w, int x, int y) {
     (void)w; // unused
     (void)x; // unused
     (void)y; // unused
@@ -106,7 +106,7 @@ static SDL_SystemCursor appropriate_cursor(SDLNW_Widget* w, int x, int y) {
 }
 
 // TODO adjust x y
-static void trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, bool* allow_passthrough) {
+static void scroll_trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, bool* allow_passthrough) {
     struct scroll_data* data = widget->data;
 
     SDLNW_Event_Click click_event = {0};
@@ -128,7 +128,7 @@ static void trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType type, 
 }
 
 // TODO x
-static void mouse_scroll(SDLNW_Widget* widget, SDLNW_Event_MouseWheel* event, bool* allow_passthrough) {   
+static void scroll_mouse_scroll(SDLNW_Widget* widget, SDLNW_Event_MouseWheel* event, bool* allow_passthrough) {   
     struct scroll_data* data = widget->data;
 
     int delta_y = -20 * event->y;
@@ -152,7 +152,7 @@ static void mouse_scroll(SDLNW_Widget* widget, SDLNW_Event_MouseWheel* event, bo
     data->y_scroll_bar.y = (int)(y_proportion_scrolled * (float)y_scroll_max) + widget->size.y;
 }
 
-static void drag(SDLNW_Widget* widget, SDLNW_Event_Drag* event, bool* allow_passthrough) {
+static void scroll_drag(SDLNW_Widget* widget, SDLNW_Event_Drag* event, bool* allow_passthrough) {
     (void)allow_passthrough; // unused for now, revisit when have more complicated examples since I can't forsee how it should work.
     struct scroll_data* data = widget->data;
 
@@ -190,13 +190,13 @@ static void drag(SDLNW_Widget* widget, SDLNW_Event_Drag* event, bool* allow_pass
 SDLNW_Widget* SDLNW_CreateScrollWidget(SDLNW_Widget* child) {
     SDLNW_Widget* widget = create_default_widget();
 
-    widget->vtable.draw = draw;
-    widget->vtable.size = size;
-    widget->vtable.destroy = destroy;
-    widget->vtable.appropriate_cursor = appropriate_cursor;
-    widget->vtable.trickle_down_event = trickle_down_event;
-    widget->vtable.mouse_scroll = mouse_scroll;
-    widget->vtable.drag = drag;
+    widget->vtable.draw = scroll_draw;
+    widget->vtable.size = scroll_size;
+    widget->vtable.destroy = scroll_destroy;
+    widget->vtable.appropriate_cursor = scroll_appropriate_cursor;
+    widget->vtable.trickle_down_event = scroll_trickle_down_event;
+    widget->vtable.mouse_scroll = scroll_mouse_scroll;
+    widget->vtable.drag = scroll_drag;
 
     struct scroll_data* data = malloc(sizeof(struct scroll_data));
     *data = (struct scroll_data) {.child = child};

@@ -1,5 +1,5 @@
 #include "SDLNW.h"
-#include "src/lib/internal_helpers.h"
+#include "internal_helpers.h"
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
@@ -94,7 +94,7 @@ void SDLNW_Widget_RouterReplace(SDLNW_Widget* w, const char* path) {
 void SDLNW_Widget_RouterBack(SDLNW_Widget* w) {
     struct router_data* data = w->data;
 
-    if (data->stack_len == 0) {
+    if (data->stack_len <= 1) {
         return;
     }
 
@@ -122,13 +122,13 @@ void SDLNW_Widget_RouterAddRoute(SDLNW_Widget* w, const char* path, void* d, SDL
     data->routes_len += 1;
 }
 
-static void draw(SDLNW_Widget* w, SDL_Renderer* renderer) {
+static void router_draw(SDLNW_Widget* w, SDL_Renderer* renderer) {
     struct router_data* data = w->data;
     resolve_buffer(data);
     SDLNW_Widget_Draw(data->current, renderer);
 }
 
-static void size(SDLNW_Widget* w, const SDL_Rect* rect) {
+static void router_size(SDLNW_Widget* w, const SDL_Rect* rect) {
     struct router_data* data = w->data;
 
     w->size = *rect;
@@ -137,14 +137,14 @@ static void size(SDLNW_Widget* w, const SDL_Rect* rect) {
     SDLNW_Widget_Size(data->current, rect);
 }
 
-static SDL_SystemCursor appropriate_cursor(SDLNW_Widget* w, int x, int y) {
+static SDL_SystemCursor router_appropriate_cursor(SDLNW_Widget* w, int x, int y) {
     struct router_data* data = w->data;
     
     resolve_buffer(data);
     return SDLNW_Widget_GetAppropriateCursor(data->current, x, y);
 }
 
-static void destroy(SDLNW_Widget* w) {
+static void router_destroy(SDLNW_Widget* w) {
     struct router_data* data = w->data;
 
     resolve_buffer(data);
@@ -162,13 +162,13 @@ static void destroy(SDLNW_Widget* w) {
     w->data = NULL;
 }
 
-static SDLNW_SizeRequest get_requested_size(SDLNW_Widget* w, enum SDLNW_SizingDimension locked_dimension, uint dimension_pixels) {
+static SDLNW_SizeRequest router_get_requested_size(SDLNW_Widget* w, enum SDLNW_SizingDimension locked_dimension, uint dimension_pixels) {
     struct router_data* data = w->data;
 
     return SDLNW_Widget_GetRequestedSize(data->current, locked_dimension, dimension_pixels);
 }
 
-static void trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, bool* allow_passthrough) {
+static void router_trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, bool* allow_passthrough) {
     struct router_data* data = widget->data;
 
     SDLNW_Widget_TrickleDownEvent(data->current, type, event_meta, allow_passthrough);
@@ -177,12 +177,12 @@ static void trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType type, 
 SDLNW_Widget* SDLNW_CreateRouterWidget(void* data, SDLNW_Widget* create_home_widget(void* data, const char* path)) {
     SDLNW_Widget* widget = create_default_widget();
 
-    widget->vtable.draw = draw;
-    widget->vtable.size = size;
-    widget->vtable.appropriate_cursor = appropriate_cursor;
-    widget->vtable.destroy = destroy;
-    widget->vtable.get_requested_size = get_requested_size;
-    widget->vtable.trickle_down_event = trickle_down_event;
+    widget->vtable.draw = router_draw;
+    widget->vtable.size = router_size;
+    widget->vtable.appropriate_cursor = router_appropriate_cursor;
+    widget->vtable.destroy = router_destroy;
+    widget->vtable.get_requested_size = router_get_requested_size;
+    widget->vtable.trickle_down_event = router_trickle_down_event;
 
     widget->data = malloc(sizeof(struct router_data));
     struct router_data* d = widget->data;
@@ -198,7 +198,7 @@ SDLNW_Widget* SDLNW_CreateRouterWidget(void* data, SDLNW_Widget* create_home_wid
 
     SDLNW_Widget_RouterAddRoute(widget, "", data, create_home_widget);
 
-    d->current = find_widget(d, "");
+    SDLNW_Widget_RouterPush(widget, "");
     SDLNW_Widget_Size(d->current, &widget->size);
 
     return widget;

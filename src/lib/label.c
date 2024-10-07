@@ -12,7 +12,7 @@ struct label_data {
     SDL_Rect surface_size;
 };
 
-static void draw(SDLNW_Widget* w, SDL_Renderer* renderer) {
+static void label_draw(SDLNW_Widget* w, SDL_Renderer* renderer) {
     struct label_data* data = w->data;
     if (data->texture == NULL && data->surface != NULL) {
         data->texture = SDL_CreateTextureFromSurface(renderer, data->surface);
@@ -30,7 +30,7 @@ static double min(double a, double b) {
     return b;
 }
 
-static void size(SDLNW_Widget* w, const SDL_Rect* rect) {
+static void label_size(SDLNW_Widget* w, const SDL_Rect* rect) {
     struct label_data* data = w->data;
     w->size = *rect;
 
@@ -58,7 +58,7 @@ static void size(SDLNW_Widget* w, const SDL_Rect* rect) {
     data->surface_size.y = rect->y + delta_height / 2;
 }
 
-static void destroy(SDLNW_Widget* w) {
+static void label_destroy(SDLNW_Widget* w) {
     struct label_data* data = w->data;
 
     SDL_FreeSurface(data->surface);
@@ -73,7 +73,7 @@ static void destroy(SDLNW_Widget* w) {
     w->data = NULL;
 }
 
-static SDLNW_SizeRequest get_requested_size(SDLNW_Widget* w, enum SDLNW_SizingDimension locked_dimension, uint dimension_pixels) {
+static SDLNW_SizeRequest label_get_requested_size(SDLNW_Widget* w, enum SDLNW_SizingDimension locked_dimension, uint dimension_pixels) {
     (void)dimension_pixels; // unused
 
     struct label_data* data = w->data;
@@ -97,14 +97,15 @@ static SDLNW_SizeRequest get_requested_size(SDLNW_Widget* w, enum SDLNW_SizingDi
 SDLNW_Widget* SDLNW_CreateLabelWidget(const char* text, SDLNW_Font* font) {
     SDLNW_Widget* widget = create_default_widget();
 
-    widget->vtable.draw = draw;
-    widget->vtable.size = size;
-    widget->vtable.destroy = destroy;
-    widget->vtable.get_requested_size = get_requested_size;
+    widget->vtable.draw = label_draw;
+    widget->vtable.size = label_size;
+    widget->vtable.destroy = label_destroy;
+    widget->vtable.get_requested_size = label_get_requested_size;
 
     widget->data = malloc(sizeof(struct label_data));
 
     struct label_data* data = widget->data;
+    *data = (struct label_data){0};
 
     // TODO
     SDL_Color fg = {0x00, 0x00, 0x00, 0xFF};
@@ -113,9 +114,6 @@ SDLNW_Widget* SDLNW_CreateLabelWidget(const char* text, SDLNW_Font* font) {
     if (data->surface == NULL) {
         printf("ttf render failure: %s\n", TTF_GetError());
     }
-
-    data->surface_size = (SDL_Rect){0};
-    data->texture = NULL;
 
     return widget;
 }

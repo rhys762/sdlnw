@@ -24,7 +24,19 @@ ninja
 
 Tests are still todo.
 
-Example code is in src/examples. 
+Example code is in src/examples and are build in *build*. Run with:
+
+```bash
+build/example_2_routing_and_scrolling
+```
+
+Or, with valgrind:
+
+```bash
+valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all --gen-suppressions=all --suppressions=./suppress.valgrind build/example_2_routing_and_scrolling &> v.log
+```
+
+Some of the suppression rules may need adjusting, probably need to revisit the wildcards for leaks originating in main.
 
 # Resource Allocation
 

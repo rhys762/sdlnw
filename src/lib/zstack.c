@@ -5,7 +5,7 @@ struct zstack_data {
     SDLNW_WidgetList* list;
 };
 
-static void draw(SDLNW_Widget* w, SDL_Renderer* renderer) {
+static void zstack_draw(SDLNW_Widget* w, SDL_Renderer* renderer) {
     struct zstack_data* data = w->data;
 
     for (uint i = 0; i < data->list->len; i++) {
@@ -14,7 +14,7 @@ static void draw(SDLNW_Widget* w, SDL_Renderer* renderer) {
 }
 
 // TODO, different sizing strategies.
-static void size(SDLNW_Widget* w, const SDL_Rect* rect) {
+static void zstack_size(SDLNW_Widget* w, const SDL_Rect* rect) {
     struct zstack_data* data = w->data;
 
     w->size = *rect;
@@ -24,7 +24,7 @@ static void size(SDLNW_Widget* w, const SDL_Rect* rect) {
     }
 }
 
-static SDL_SystemCursor appropriate_cursor(SDLNW_Widget* w, int x, int y) {
+static SDL_SystemCursor zstack_appropriate_cursor(SDLNW_Widget* w, int x, int y) {
     struct zstack_data* data = w->data;
     SDL_SystemCursor cursor = SDL_SYSTEM_CURSOR_ARROW;
 
@@ -36,7 +36,7 @@ static SDL_SystemCursor appropriate_cursor(SDLNW_Widget* w, int x, int y) {
     return cursor;
 }
 
-static void destroy(SDLNW_Widget* w) {
+static void zstack_destroy(SDLNW_Widget* w) {
     struct zstack_data* data = w->data;
 
     SDLNW_WidgetList_Destroy(data->list);
@@ -46,7 +46,7 @@ static void destroy(SDLNW_Widget* w) {
     w->data = NULL;
 }
 
-static SDLNW_SizeRequest get_requested_size(SDLNW_Widget* w, enum SDLNW_SizingDimension locked_dimension, uint dimension_pixels) {
+static SDLNW_SizeRequest zstack_get_requested_size(SDLNW_Widget* w, enum SDLNW_SizingDimension locked_dimension, uint dimension_pixels) {
     struct zstack_data* data = w->data;
 
     int pixels = 0, shares = 0;
@@ -72,7 +72,7 @@ static SDLNW_SizeRequest get_requested_size(SDLNW_Widget* w, enum SDLNW_SizingDi
     return req;
 }
 
-static void trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, bool* allow_passthrough) {
+static void zstack_trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, bool* allow_passthrough) {
     struct zstack_data* data = widget->data;
 
     if (data->list->len == 0) {
@@ -90,12 +90,12 @@ static void trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType type, 
 SDLNW_Widget* SDLNW_CreateZStackWidget(SDLNW_WidgetList* list) {
     SDLNW_Widget* widget = create_default_widget();
 
-    widget->vtable.draw = draw;
-    widget->vtable.size = size;
-    widget->vtable.appropriate_cursor = appropriate_cursor;
-    widget->vtable.destroy = destroy;
-    widget->vtable.get_requested_size = get_requested_size;
-    widget->vtable.trickle_down_event = trickle_down_event;
+    widget->vtable.draw = zstack_draw;
+    widget->vtable.size = zstack_size;
+    widget->vtable.appropriate_cursor = zstack_appropriate_cursor;
+    widget->vtable.destroy = zstack_destroy;
+    widget->vtable.get_requested_size = zstack_get_requested_size;
+    widget->vtable.trickle_down_event = zstack_trickle_down_event;
 
     widget->data = malloc(sizeof(struct zstack_data));
     *((struct zstack_data*)widget->data) = (struct zstack_data){ .list = list };

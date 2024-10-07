@@ -2,7 +2,7 @@
 #include "internal_helpers.h"
 #include <SDL2/SDL_render.h>
 
-static void draw(SDLNW_Widget* wid, SDL_Renderer* renderer) {
+static void placeholder_draw(SDLNW_Widget* wid, SDL_Renderer* renderer) {
     // white box
     SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
     SDL_RenderFillRect(renderer, &wid->size);
@@ -21,7 +21,7 @@ static void draw(SDLNW_Widget* wid, SDL_Renderer* renderer) {
 SDLNW_Widget* SDLNW_CreatePlaceholderWidget(void) {
     SDLNW_Widget* widget = create_default_widget();
 
-    widget->vtable.draw = draw;
+    widget->vtable.draw = placeholder_draw;
 
     return widget;
 }
