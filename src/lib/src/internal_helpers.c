@@ -1,5 +1,5 @@
-#include "internal_helpers.h"
-#include "SDLNW.h"
+#include "../include/internal_helpers.h"
+#include "../include/SDLNW.h"
 
 static void base_draw(SDLNW_Widget* w, SDL_Renderer* renderer) {
     (void)w; // unused

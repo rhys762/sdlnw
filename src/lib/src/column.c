@@ -1,5 +1,5 @@
-#include "SDLNW.h"
-#include "internal_helpers.h"
+#include "../include/SDLNW.h"
+#include "../include/internal_helpers.h"
 
 struct column_data {
     SDLNW_WidgetList* list;

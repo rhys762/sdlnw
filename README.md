@@ -14,8 +14,26 @@ SDL Nested Widgets is intended to be a small library for managing simple ui elem
 
 # Building
 
+## First time setup
+
+Download Jet Brains Mono:
+
+```bash
+./scripts/get_jbm.bash
+ls jbm/fonts/ttf/JetBrainsMono-Regular.ttf # success
+```
+
+Create the build directory and build:
+
 ```bash
 meson setup build
+cd build
+ninja
+```
+
+## Following builds
+
+```bash
 cd build
 ninja
 ```
@@ -24,7 +42,7 @@ ninja
 
 Tests are still todo.
 
-Example code is in src/examples and are built in *build*. Run with:
+Example code is in `src/examples` and are built in `build`. Run with:
 
 ```bash
 build/example_2_routing_and_scrolling
@@ -74,6 +92,53 @@ SDLNW_Widget* button = SDLNW_CreateButtonWidget(p, s, cb);
 // button should free s when it is destroyed:
 SDLNW_Widget_AddOnDestroy(button, s, free);
 ```
+
+# Integration
+
+## With a Meson Project
+
+Add SDLNW as a git submodule (meson requires the `subprojects` directory):
+
+```bash
+git submodule add git@github.com:rhys762/sdlnw.git subprojects/sdlnw
+```
+
+Then in your projects meson.build:
+
+```meson
+# sdl and ttf as usual
+sdl2_dep = dependency('sdl2')
+ttf_dep = dependency('SDL2_ttf')
+
+# sdlnw
+sdlnw_proj = subproject('sdlnw')
+sdlnw_dep = sdlnw_proj.get_variable('sdlnw_dep')
+
+# your program build step
+executable('my_program', 'main.c', dependencies: [sdl2_dep, ttf_dep, sdlnw_dep])
+```
+
+Once you've built once, your language server will probably be able to find all the declaration's. It worked out of the box for me with vs-code and clangd.
+
+## Otherwise
+
+Add SDLNW as a git submodule:
+
+```bash
+git submodule add git@github.com:rhys762/sdlnw.git subprojects/sdlnw
+```
+
+Your consuming application will need to include `subprojects/sdlnw/src/lib/include/SDLNW.h`.
+
+Then:
+```bash
+cd subprojects/sdlnw
+meson setup build
+cd build
+ninja
+```
+
+Which should produce `subprojects/sdlnw/build/libSDLNW.a`, which you can then link against.
 
 # TODO List
 

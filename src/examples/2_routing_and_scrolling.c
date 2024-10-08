@@ -3,7 +3,7 @@ an example demonstrating paragraph widgets, scroll widgets and routers.
 */
 
 #include <assert.h>
-#include "../lib/SDLNW.h"
+#include "SDLNW.h"
 #include <libgen.h>
 #include <time.h>
 

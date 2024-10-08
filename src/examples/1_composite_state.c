@@ -6,7 +6,7 @@ That state can be adjusted as desired and the composite widget ordered to rebuil
 The app itself is a click counter, with the surface changing colour on each click.
 */
 
-#include "../lib/SDLNW.h"
+#include "SDLNW.h"
 #include "SDL_stdinc.h"
 #include <libgen.h>
 

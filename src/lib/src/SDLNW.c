@@ -1,4 +1,4 @@
-#include "SDLNW.h"
+#include "../include/SDLNW.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_events.h>
 #include <SDL2/SDL_mouse.h>

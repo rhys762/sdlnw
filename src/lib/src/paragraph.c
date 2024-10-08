@@ -1,5 +1,5 @@
-#include "SDLNW.h"
-#include "internal_helpers.h"
+#include "../include/SDLNW.h"
+#include "../include/internal_helpers.h"
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL_surface.h>
 #include <assert.h>

@@ -1,4 +1,4 @@
-#include "SDLNW.h"
+#include "../include/SDLNW.h"
 #include "SDL2/SDL_ttf.h"
 
 SDLNW_Font* SDLNW_Font_Create(const char* path, int ptsize) {

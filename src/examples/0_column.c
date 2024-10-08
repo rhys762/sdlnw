@@ -3,7 +3,7 @@ This is a hello world example, it displays 3 surfaces in a column and otherwise 
 */
 
 #include <SDL2/SDL.h>
-#include "../lib/SDLNW.h"
+#include "SDLNW.h"
 
 #define WIDTH 500
 #define HEIGHT 800
