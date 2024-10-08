@@ -11,5 +11,5 @@ if [ -d ./build/jbm/ ]; then
 fi
 
 wget 'https://download.jetbrains.com/fonts/JetBrainsMono-2.304.zip'
-unzip JetBrainsMono-2.304.zip -d ./build/jbm/
+unzip JetBrainsMono-2.304.zip -d ./jbm/
 rm JetBrainsMono-2.304.zip

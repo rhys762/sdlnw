@@ -90,7 +90,7 @@ int main(int argc, char** argv) {
     assert(argc == 1);
     const char* dir = dirname(argv[0]);
     char* fontpath = NULL;
-    SDL_asprintf(&fontpath, "%s/jbm/fonts/ttf/JetBrainsMonoNL-Regular.ttf", dir);
+    SDL_asprintf(&fontpath, "%s/../jbm/fonts/ttf/JetBrainsMonoNL-Regular.ttf", dir);
 
     // need to init ttf for font rendering
     SDL_Init(SDL_INIT_EVERYTHING);
