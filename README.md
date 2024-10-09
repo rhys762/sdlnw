@@ -118,6 +118,28 @@ sdlnw_dep = sdlnw_proj.get_variable('sdlnw_dep')
 executable('my_program', 'main.c', dependencies: [sdl2_dep, ttf_dep, sdlnw_dep])
 ```
 
+A minimal sanity check main.c would be:
+
+```c
+
+#include "SDLNW.h"
+
+int main(void) {
+    SDL_Init(SDL_INIT_EVERYTHING);
+    TTF_Init();
+
+    SDLNW_Widget* w = SDLNW_CreatePlaceholderWidget();
+
+    SDLNW_bootstrap(w, (SDLNW_BootstrapOptions) {0});
+
+    SDLNW_Widget_Destroy(w);
+
+    TTF_Quit();
+    SDL_Quit();
+}
+
+```
+
 Once you've built once, your language server will probably be able to find all the declaration's. It worked out of the box for me with vs-code and clangd.
 
 ## Otherwise
