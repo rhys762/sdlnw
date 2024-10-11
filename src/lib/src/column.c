@@ -51,6 +51,10 @@ static void column_size(SDLNW_Widget* w, const SDL_Rect* rect) {
     }
 }
 
+static SDL_SystemCursor max_cursor(SDL_SystemCursor a, SDL_SystemCursor b) {
+    return (a > b) ? a : b;
+}
+
 static SDL_SystemCursor column_appropriate_cursor(SDLNW_Widget* w, int x, int y) {
     struct column_data* data = w->data;
     SDL_SystemCursor cursor = SDL_SYSTEM_CURSOR_ARROW;
@@ -58,7 +62,7 @@ static SDL_SystemCursor column_appropriate_cursor(SDLNW_Widget* w, int x, int y)
     for (uint i = 0; i < data->list->len; i++) {
         SDLNW_Widget* w = data->list->widgets[i];
         if (is_point_within_rect(x, y, &w->size)) {
-            cursor |= SDLNW_Widget_GetAppropriateCursor(w, x, y);
+            cursor = max_cursor(cursor, SDLNW_Widget_GetAppropriateCursor(w, x, y));
         }
     }
 

@@ -5,7 +5,6 @@
 
 struct scroll_data {
     SDLNW_Widget* child;
-    SDL_Rect child_window;
 
     SDL_Texture* texture;
     int texture_width, texture_height;
@@ -97,32 +96,48 @@ static void scroll_destroy(SDLNW_Widget* w) {
     w->data = NULL;
 }
 
-// TODO adjust x y
 static SDL_SystemCursor scroll_appropriate_cursor(SDLNW_Widget* w, int x, int y) {
-    (void)w; // unused
-    (void)x; // unused
-    (void)y; // unused
-    return SDL_SYSTEM_CURSOR_ARROW;
+    struct scroll_data* data = w->data;
+
+    return SDLNW_Widget_GetAppropriateCursor(data->child, x + data->window.x - w->size.x, y + data->window.y - w->size.y);
 }
 
-// TODO adjust x y
+// need to offset x and y values of incoming events to account 
+// for x and y shift.
 static void scroll_trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, bool* allow_passthrough) {
     struct scroll_data* data = widget->data;
 
     SDLNW_Event_Click click_event = {0};
+    SDLNW_Event_MouseMove motion_event = {0};
+
+    int x_offset = data->window.x - widget->size.x;
+    int y_offset = data->window.y - widget->size.y;
 
     // todo others.
     if (type == SDLNW_EventType_Click) {
         // get offset from the scroll widget, then add offset of scroll
         SDLNW_Event_Click* incoming = event_meta;
-        int x_widget_offset = incoming->x - widget->size.x;
-        int y_widget_offset = incoming->y - widget->size.y;
 
-        click_event.x = x_widget_offset + data->window.x;
-        click_event.y = y_widget_offset + data->window.y;
+        click_event.x = incoming->x + x_offset;
+        click_event.y = incoming->y + y_offset;
 
         event_meta = &click_event;
     }
+    else if (type == SDLNW_EventType_MouseMove) {
+        SDLNW_Event_MouseMove* incoming = event_meta;
+
+        motion_event = (SDLNW_Event_MouseMove){
+            .current_x = incoming->current_x + x_offset,
+            .current_y = incoming->current_y + y_offset,
+            .last_x = incoming->last_x + x_offset,
+            .last_y = incoming->last_y + y_offset
+        };
+
+        event_meta = &motion_event;
+
+    }
+    // TODO scroll should produce a mouce motion event,
+    // since we may have scrolled somthing under/out from under the mouse.
 
     SDLNW_Widget_TrickleDownEvent(data->child, type, event_meta, allow_passthrough);
 }
@@ -131,7 +146,7 @@ static void scroll_trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType
 static void scroll_mouse_scroll(SDLNW_Widget* widget, SDLNW_Event_MouseWheel* event, bool* allow_passthrough) {   
     struct scroll_data* data = widget->data;
 
-    int delta_y = -20 * event->y;
+    int delta_y = -20 * event->delta_y;
     
     *allow_passthrough = 0;
     data->window.y += delta_y;

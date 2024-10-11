@@ -37,23 +37,30 @@ enum SDLNW_SizingDimension {
 enum SDLNW_EventType {
     SDLNW_EventType_Click,
     SDLNW_EventType_MouseScroll,
-    SDLNW_EventType_MouseDrag,
+    SDLNW_EventType_MouseDrag, // Combine with below?
+    SDLNW_EventType_MouseMove
 };
 
 typedef struct {
     int x, y;
 } SDLNW_Event_Click;
 
-// todo this is currently giving a delta,
-// probably needs mouse pos too
 typedef struct {
+    // mouse pos
     int x, y;
+    // how much was scrolled, apparently some wheels can scroll in the x direction.
+    int delta_x, delta_y;
 } SDLNW_Event_MouseWheel;
 
 typedef struct {
     int mouse_x, mouse_y, origin_x, origin_y;
     bool still_down;
 } SDLNW_Event_Drag;
+
+typedef struct {
+    int current_x, current_y;
+    int last_x, last_y;
+} SDLNW_Event_MouseMove;
 
 typedef struct {
     void (*draw)(SDLNW_Widget* w, SDL_Renderer* renderer);
@@ -68,6 +75,8 @@ typedef struct {
     void (*click)(SDLNW_Widget* w, SDLNW_Event_Click* event, bool* allow_passthrough);
     void (*mouse_scroll)(SDLNW_Widget* widget, SDLNW_Event_MouseWheel* event, bool* allow_passthrough);
     void (*drag)(SDLNW_Widget* widget, SDLNW_Event_Drag* event, bool* allow_passthrough);
+    void (*on_hover_on)(SDLNW_Widget* widget, SDLNW_Event_MouseMove* event, bool* allow_passthrough);
+    void (*on_hover_off)(SDLNW_Widget* widget, SDLNW_Event_MouseMove* event, bool* allow_passthrough);
 } SDLNW_Widget_VTable;
 
 // cleaner v-table calls
@@ -79,7 +88,8 @@ SDL_SystemCursor SDLNW_Widget_GetAppropriateCursor(SDLNW_Widget* w, int x, int y
 SDLNW_SizeRequest SDLNW_Widget_GetRequestedSize(SDLNW_Widget* w, enum SDLNW_SizingDimension locked_dimension, uint dimension_pixels);
 void SDLNW_Widget_Destroy(SDLNW_Widget* w);
 void SDLNW_Widget_TrickleDownEvent(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, bool* allow_passthrough);
-void SDLNW_Widget_MouseScroll(SDLNW_Widget* w, int x, int y);
+void SDLNW_Widget_MouseScroll(SDLNW_Widget* w, int x, int y, int delta_x, int delta_y);
+void SDLNW_Widget_MouseMotion(SDLNW_Widget* w, int x, int y, int last_x, int last_y);
 // other helpers
 
 // adds data and callback which will be executed when the widget is destroyed
@@ -143,7 +153,6 @@ SDLNW_Widget* SDLNW_CreateColumnWidget(SDLNW_WidgetList* list);
 // first on bottom, last on top
 SDLNW_Widget* SDLNW_CreateZStackWidget(SDLNW_WidgetList* list);
 // TODO, replace with generic gesture widget?
-SDLNW_Widget* SDLNW_CreateButtonWidget(SDLNW_Widget* child, void* data, void(*cb)(void* data, int x, int y));
 SDLNW_Widget* SDLNW_CreateCompositeWidget(void* data, SDLNW_Widget*(*cb)(SDLNW_Widget* parent, void*data));
 SDLNW_Widget* SDLNW_CreateRouterWidget(void* data, SDLNW_Widget* create_home_widget(void* data, const char* path));
 SDLNW_Widget* SDLNW_CreateScrollWidget(SDLNW_Widget* child);
@@ -158,7 +167,19 @@ typedef struct {
     int height_pixels;
     int height_shares;
 } SDLNW_SizedBoxWidget_Options;
+// can force a child to be a certain width/height
 SDLNW_Widget* SDLNW_CreateSizedBoxWidget(SDLNW_Widget* child, SDLNW_SizedBoxWidget_Options opts);
+// detects clicks, mouse hover etc
+// unused should be left NULL
+// setting allow_passthrough to false will stop the event propogating to parents,
+// ie set to true if the event should not go to widgets behind
+typedef struct {
+    void* data;
+    void(*on_click)(void* data, int x, int y, bool* allow_passthrough);
+    void(*on_mouse_hover_on)(void* data, bool* allow_passthrough);
+    void(*on_mouse_hover_off)(void* data, bool* allow_passthrough);
+} SDLNW_GestureDetectorWidget_Options;
+SDLNW_Widget* SDLNW_CreateGestureDetectorWidget(SDLNW_Widget* child, SDLNW_GestureDetectorWidget_Options options);
 
 // all optional and will be overriden by 'sensible' defaults if 0.
 typedef struct {

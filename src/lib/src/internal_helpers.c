@@ -57,6 +57,18 @@ static void base_drag(SDLNW_Widget* widget, SDLNW_Event_Drag* event, bool* allow
     (void)allow_passthrough; // ununsed
 }
 
+static void base_on_hover_on(SDLNW_Widget* widget, SDLNW_Event_MouseMove* event, bool* allow_passthrough) {
+    (void)widget;
+    (void)event;
+    (void)allow_passthrough;
+}
+
+static void base_on_hover_off(SDLNW_Widget* widget, SDLNW_Event_MouseMove* event, bool* allow_passthrough) {
+    (void)widget;
+    (void)event;
+    (void)allow_passthrough;
+}
+
 static void init_default_vtable(SDLNW_Widget_VTable* table) {
     table->draw = base_draw;
     table->size = base_size;
@@ -67,6 +79,8 @@ static void init_default_vtable(SDLNW_Widget_VTable* table) {
     table->trickle_down_event = base_trickle_down_event;
     table->mouse_scroll = base_mouse_scroll;
     table->drag = base_drag;
+    table->on_hover_on = base_on_hover_on;
+    table->on_hover_off = base_on_hover_off;
 }
 
 // init default widget
@@ -80,7 +94,7 @@ SDLNW_Widget* create_default_widget(void) {
     return p;
 }
 
-int is_point_within_rect(int x, int y, const SDL_Rect* rect) {
+bool is_point_within_rect(int x, int y, const SDL_Rect* rect) {
     return x >= rect->x && x < rect->x + rect->w &&
         y >= rect->y && y < rect->y + rect->h;
 }

@@ -24,13 +24,17 @@ static void zstack_size(SDLNW_Widget* w, const SDL_Rect* rect) {
     }
 }
 
+static SDL_SystemCursor max(SDL_SystemCursor a, SDL_SystemCursor b) {
+    return (a > b) ? a : b;
+}
+
 static SDL_SystemCursor zstack_appropriate_cursor(SDLNW_Widget* w, int x, int y) {
     struct zstack_data* data = w->data;
     SDL_SystemCursor cursor = SDL_SYSTEM_CURSOR_ARROW;
 
     for (uint i = 0; i < data->list->len; i++) {
         SDLNW_Widget* w = data->list->widgets[i];
-        cursor |= SDLNW_Widget_GetAppropriateCursor(w, x, y);
+        cursor = max(cursor, SDLNW_Widget_GetAppropriateCursor(w, x, y));
     }
 
     return cursor;

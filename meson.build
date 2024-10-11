@@ -7,10 +7,10 @@ ttf_dep = dependency('SDL2_ttf')
 # lib
 sdlnw_inc = include_directories('src/lib/include')
 sdlnw_lib = static_library('SDLNW',
-'src/lib/src/button.c',
 'src/lib/src/column.c', 
 'src/lib/src/composite.c',
 'src/lib/src/font.c',
+'src/lib/src/gesture.c',
 'src/lib/src/internal_helpers.c', 
 'src/lib/src/label.c', 
 'src/lib/src/paragraph.c',

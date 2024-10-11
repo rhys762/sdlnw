@@ -172,7 +172,7 @@ In no particular order.
 - [ ] Row widget
 - [x] Column widget
 - [x] Surface widget
-- [x] Button widget
+- [x] Gesture widget
 - [ ] Styling
 - [x] Label widget
 - [x] Paragraph widget
@@ -186,10 +186,12 @@ In no particular order.
 - [x] Mouse pointer updates, eg standard and clickable.
 - [x] Scroll widget
 - [ ] Animation widget
-- [ ] Checkbox (maybe)
-- [ ] Slider (maybe)
+- [ ] Checkbox
+- [ ] Slider
 - [x] Sized box
 - [ ] Center box
+- [ ] Dropdown
+- [ ] Gesture Detector Widget
 
 ## Misc
 
@@ -199,3 +201,4 @@ In no particular order.
 - The composite recompose should assert that its actually got a composite widget, instead of being UB
 - Text selection
 - Clipboard
+- how much of sdlnw.h can be moved to internal helpers

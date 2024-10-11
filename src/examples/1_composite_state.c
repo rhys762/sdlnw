@@ -32,9 +32,10 @@ struct button_data {
 // the onclick handler for the button
 // increment the click counter and 
 // order the composite widget to rebuild
-void on_click(void* p, int x, int y) {
+void on_click(void* p, int x, int y, bool* allow_passthrough) {
     (void)x; // unused
     (void)y; // unused
+    (void)allow_passthrough;
 
     struct button_data* data = p;
     data->app_state->clicked_count += 1;
@@ -77,7 +78,7 @@ SDLNW_Widget* build(SDLNW_Widget* parent, void* state) {
     
 
     SDLNW_Widget* zstack = SDLNW_CreateZStackWidget(list);
-    SDLNW_Widget* button = SDLNW_CreateButtonWidget(zstack, data, on_click);
+    SDLNW_Widget* button = SDLNW_CreateGestureDetectorWidget(zstack, (SDLNW_GestureDetectorWidget_Options){.data=data, .on_click=on_click});
 
     // clean up the button data that we allocated when the button is destroyed
     SDLNW_Widget_AddOnDestroy(button, data, free);

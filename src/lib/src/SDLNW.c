@@ -1,4 +1,5 @@
 #include "../include/SDLNW.h"
+#include "internal_helpers.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_events.h>
 #include <SDL2/SDL_mouse.h>
@@ -6,6 +7,7 @@
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_video.h>
 #include <assert.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 void SDLNW_Widget_Draw(SDLNW_Widget* w, SDL_Renderer* renderer) {
@@ -112,11 +114,6 @@ SDL_SystemCursor SDLNW_Widget_GetAppropriateCursor(SDLNW_Widget* w, int x, int y
 SDLNW_SizeRequest SDLNW_Widget_GetRequestedSize(SDLNW_Widget* w, enum SDLNW_SizingDimension locked_dimension, uint dimension_pixels) {
     SDLNW_SizeRequest r = w->vtable.get_requested_size(w, locked_dimension, dimension_pixels);
 
-    // widget requested 0 pixels and 0 shares, give 1 share.
-    // if (r.pixels == 0 && r.shares == 0) {
-    //     r.shares = 1;
-    // }
-
     return r;
 }
 
@@ -148,24 +145,65 @@ void SDLNW_Widget_TrickleDownEvent(SDLNW_Widget* widget, enum SDLNW_EventType ty
     if (*allow_passthrough) {
         switch(type) {
             case SDLNW_EventType_Click:
-                widget->vtable.click(widget, event_meta, allow_passthrough);
+                {
+                    SDLNW_Event_Click* e = event_meta;
+                    if (is_point_within_rect(e->x, e->y, &widget->size)) {
+                        widget->vtable.click(widget, e, allow_passthrough);
+                    }
+                }
                 break;
             case SDLNW_EventType_MouseScroll:
-                widget->vtable.mouse_scroll(widget, event_meta, allow_passthrough);
+                {
+                    SDLNW_Event_MouseWheel* e = event_meta;
+                    if (is_point_within_rect(e->x, e->y, &widget->size)) {
+                        widget->vtable.mouse_scroll(widget, e, allow_passthrough);
+                    }
+                }
+                
                 break;
             case SDLNW_EventType_MouseDrag:
-                widget->vtable.drag(widget, event_meta, allow_passthrough);
+                {
+                    SDLNW_Event_Drag* e = event_meta;
+                    if (is_point_within_rect(e->mouse_x, e->mouse_y, &widget->size) || is_point_within_rect(e->origin_x, e->origin_y, &widget->size)) {
+                        widget->vtable.drag(widget, event_meta, allow_passthrough);
+                    }
+                }
+                break;
+            case SDLNW_EventType_MouseMove:
+                {
+                    SDLNW_Event_MouseMove* e = event_meta;
+
+                    bool is_within = is_point_within_rect(e->current_x, e->current_y, &widget->size);
+                    bool was_within = is_point_within_rect(e->last_x, e->last_y, &widget->size);
+
+                    if (is_within && !was_within) {
+                        widget->vtable.on_hover_on(widget, e, allow_passthrough);
+                    } else if (!is_within && was_within) {
+                        widget->vtable.on_hover_off(widget, e, allow_passthrough);
+                    }
+                }
                 break;
         }
     }
 }
 
-void SDLNW_Widget_MouseScroll(SDLNW_Widget* w, int x, int y) {
+void SDLNW_Widget_MouseScroll(SDLNW_Widget* w, int x, int y, int delta_x, int delta_y) {
     SDLNW_Event_MouseWheel event = (SDLNW_Event_MouseWheel){
-        .x = x, .y = y
+        .x = x, .y = y, .delta_x = delta_x, .delta_y = delta_y
     };
 
     SDLNW_Widget_TrickleDownEvent(w, SDLNW_EventType_MouseScroll, &event, NULL);
+}
+
+void SDLNW_Widget_MouseMotion(SDLNW_Widget* w, int x, int y, int last_x, int last_y) {
+    SDLNW_Event_MouseMove event = (SDLNW_Event_MouseMove) {
+        .current_x = x,
+        .current_y = y,
+        .last_x = last_x,
+        .last_y = last_y
+    };
+
+    SDLNW_Widget_TrickleDownEvent(w, SDLNW_EventType_MouseMove, &event, NULL);
 }
 
 static int square_sum(int a, int b) {
@@ -214,6 +252,9 @@ void SDLNW_bootstrap(SDLNW_Widget* widget, SDLNW_BootstrapOptions options) {
                 }
             }
             else if (event.type == SDL_MOUSEMOTION) {
+                int last_x = mouse_x;
+                int last_y = mouse_y;
+
                 mouse_x = event.motion.x;
                 mouse_y = event.motion.y;
 
@@ -223,6 +264,9 @@ void SDLNW_bootstrap(SDLNW_Widget* widget, SDLNW_BootstrapOptions options) {
                     SDL_SystemCursor widget_cursor = SDLNW_Widget_GetAppropriateCursor(widget, mouse_x, mouse_y);
                     SDL_Cursor* cursor =  SDL_CreateSystemCursor(widget_cursor);
                     SDL_SetCursor(cursor);
+
+                    // SDLNW_Widget_
+                    SDLNW_Widget_MouseMotion(widget, mouse_x, mouse_y, last_x, last_y);
                 }                
             }
             else if (event.type == SDL_WINDOWEVENT) {
@@ -232,7 +276,7 @@ void SDLNW_bootstrap(SDLNW_Widget* widget, SDLNW_BootstrapOptions options) {
                 }
             }
             else if (event.type == SDL_MOUSEWHEEL) {
-                SDLNW_Widget_MouseScroll(widget, event.wheel.x, event.wheel.y);
+                SDLNW_Widget_MouseScroll(widget, mouse_x, mouse_y, event.wheel.x, event.wheel.y);
             }
         }
 

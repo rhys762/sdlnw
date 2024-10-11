@@ -1,5 +1,7 @@
 /*
 an example demonstrating paragraph widgets, scroll widgets and routers.
+
+Also demonstrates hover for gesture widgets, used to alter button colour on hover.
 */
 
 #include <assert.h>
@@ -15,18 +17,119 @@ SDLNW_Widget* router = NULL;
 
 const char* paragraph_path = "paragraph";
 
-void home_button_cb(void * data, int x, int y) {
-    (void)x; // unused
-    (void)y; // unused
+/*
+    The buttons heirachy is, top down:
+    1: the gesture widget (uses clicks to route, hover to update state, will tell composite(2) to rebuild)
+    2: the composite widget (rebuilds contents when told to)
+    3: a zstack widget with the following bottom up:
+        1: a surface widget, for the background
+        2: a label widget presenting the text
 
-    const char* path = data;
-    SDLNW_Widget_RouterPush(router, path);
+    When the button is clicked we send a command to the router.
+    When the button is hovered, the button state is modified and the composite told to rebuild.
+*/
+
+struct button_data {
+    bool hovered;
+    SDLNW_Colour colour;
+    const char* text;
+    SDLNW_Widget* comp;
+};
+
+void button_on_mouse_hover_on(void* data, bool* allow_passthrough) {
+    struct button_data* button_data = data;
+
+    button_data->hovered = true;
+    *allow_passthrough = false;
+    SDLNW_Widget_Recompose(button_data->comp);
 }
 
-void route_back(void * data, int x, int y) {
+void button_on_mouse_hover_off(void* data, bool* allow_passthrough) {
+    struct button_data* button_data = data;
+
+    button_data->hovered = false;
+    *allow_passthrough = false;
+    SDLNW_Widget_Recompose(button_data->comp);
+}
+
+static Uint8 increment_without_overflow(Uint8 a, Uint8 b) {
+    uint aa = a;
+    uint bb = b;
+
+    uint cc = aa + bb;
+
+    if (cc > 0xFF) {
+        cc = 0xFF;
+    }
+
+    return cc;
+}
+
+// the builder given to the composite widget
+SDLNW_Widget* create_button_builder(SDLNW_Widget* parent, void* data) {
+    (void)parent; // not used, rebuilding is handled by the gesture widget
+
+    struct button_data* button_data = data;
+
+    SDLNW_Colour c = button_data->colour;
+
+    // add brightness to button on hover.
+    if (button_data->hovered) {
+        c = (SDLNW_Colour){
+            .r = increment_without_overflow(c.r, 30),
+            .g = increment_without_overflow(c.g, 30),
+            .b = increment_without_overflow(c.b, 30)
+        };
+    }
+
+    SDLNW_WidgetList* list = SDLNW_WidgetList_Create();
+
+    SDLNW_WidgetList_Push(list, SDLNW_CreateSurfaceWidget(c));
+    SDLNW_WidgetList_Push(list, SDLNW_CreateLabelWidget(button_data->text, font));
+
+    SDLNW_Widget* zstack = SDLNW_CreateZStackWidget(list);
+
+    return zstack;
+}
+
+// creates a generic button that changes colour on hover
+SDLNW_Widget* create_button(const char* text, SDLNW_Colour colour, void (*cb)(void* data, int x, int y, bool* allow_passthrough)) {
+    struct button_data* data = malloc(sizeof(struct button_data));
+    *data = (struct button_data) {.colour = colour, .text = text};
+
+    SDLNW_Widget* comp = SDLNW_CreateCompositeWidget(data, create_button_builder);
+    data->comp = comp;
+
+    SDLNW_Widget* gesture = SDLNW_CreateGestureDetectorWidget(comp, (SDLNW_GestureDetectorWidget_Options){
+        .data = data,
+        .on_click = cb,
+        .on_mouse_hover_on = button_on_mouse_hover_on,
+        .on_mouse_hover_off = button_on_mouse_hover_off
+    });
+
+    SDLNW_Widget_AddOnDestroy(gesture, data, free);
+
+    return gesture;
+}
+
+// button cb for the home page button, takes us to the paragraph page
+void home_button_cb(void * data, int x, int y, bool* allow_passthrough) {
     (void)data; // unused
     (void)x; // unused
     (void)y; // unused
+    (void)allow_passthrough; // unused
+    
+    SDLNW_Widget_RouterPush(router, paragraph_path);
+}
+
+// button cb for the paragraph page, will pop the paragraph page off the stack, deleting it
+// and take the user back to the home page
+void route_back(void * data, int x, int y, bool* allow_passthrough) {
+    (void)data; // unused
+    (void)x; // unused
+    (void)y; // unused
+    (void)allow_passthrough; // unused
+
     SDLNW_Widget_RouterBack(router);
 }
 
@@ -34,22 +137,8 @@ SDLNW_Widget* create_home_widget(void * data, const char * path) {
     (void)data; // unused
     (void)path; // unused
 
-    SDLNW_WidgetList* list = SDLNW_WidgetList_Create();
-    SDLNW_WidgetList_Push(list, SDLNW_CreateSurfaceWidget((SDLNW_Colour) {0xFF, 0x00, 0x00}));
-    SDLNW_WidgetList_Push(list, SDLNW_CreateLabelWidget("Show some text", font));
-
-    SDLNW_Widget* zstack = SDLNW_CreateZStackWidget(list);
-
-    return SDLNW_CreateButtonWidget(zstack, (void*)paragraph_path, home_button_cb);
-}
-
-SDLNW_Widget* create_button(void) {
-    SDLNW_WidgetList* zstack_list = SDLNW_WidgetList_Create();
-
-    SDLNW_WidgetList_Push(zstack_list, SDLNW_CreateSurfaceWidget((SDLNW_Colour) {.b = 0xFF}));
-    SDLNW_WidgetList_Push(zstack_list, SDLNW_CreateLabelWidget("Click to go Back", font));
-
-    return SDLNW_CreateButtonWidget(SDLNW_CreateZStackWidget(zstack_list), NULL, route_back);
+    SDLNW_Colour red = (SDLNW_Colour) {.r=0xFF};
+    return create_button("Show some text", red, home_button_cb);
 }
 
 // a paragraph of text, and a button.
@@ -61,8 +150,9 @@ SDLNW_Widget* create_paragraph(void * data, const char * path) {
     SDLNW_WidgetList* column_list = SDLNW_WidgetList_Create();
 
     SDLNW_WidgetList_Push(column_list, SDLNW_CreateParagraphWidget(text, font));
-    SDLNW_WidgetList_Push(column_list, create_button());
 
+    SDLNW_Colour blue = {.b = 0xFF};
+    SDLNW_WidgetList_Push(column_list, create_button("Click to go Back", blue, route_back));
 
     SDLNW_WidgetList* zstack_list = SDLNW_WidgetList_Create();
 
