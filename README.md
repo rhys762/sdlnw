@@ -1,6 +1,6 @@
 
 > [!WARNING]  
-> This library is early development and is both unstable and incomplete.
+> This library is in early development and is both unstable and incomplete.
 
 # About
 
@@ -64,23 +64,25 @@ Widget's and WidgetList's take ownership of any child widgets, typically you wil
 
 ```c
 SDLNW_Widget* p = SDLNW_CreatePlaceholderWidget();
-SDLNW_Widget* button = SDLNW_CreateButtonWidget(p, NULL, cb);
+SDLNW_Widget* scroll = SDLNW_CreateScrollWidget(p);
 
 // run app
 const SDLNW_BootstrapOptions options = (SDLNW_BootstrapOptions){0};
 SDLNW_bootstrap(button, options);    
 
 // finished running
-// button has ownership of p, only need to destroy button
-SDLNW_Widget_Destroy(button);
+// scroll has ownership of p, only need to destroy scroll
+SDLNW_Widget_Destroy(scroll);
+p = NULL;
+scroll = NULL;
 ```
 
 In contrast, widgets that accept pointers to some kind of state or otherwise do NOT take ownership of that data by default:
 
 ```c
 struct some_struct s = {0};
-SDLNW_Widget* button = SDLNW_CreateButtonWidget(p, &s, cb);
-// OK, button will not try to free s.
+SDLNW_Widget* button = SDLNW_CreateGestureDetectorWidget(child_widget, (SDLNW_GestureDetectorWidget_Options){.data=&s, .on_click=on_click});
+// OK, button has a pointer to a local variable, but will not try to free
 ```
 
 However, in the case that you do want such a pointer cleaned up, widgets can be told to do so at the end of their lifetime:
@@ -88,7 +90,7 @@ However, in the case that you do want such a pointer cleaned up, widgets can be 
 ```c
 struct some_struct* s = malloc(sizeof(struct some_struct));
 *s = (struct some_struct){0};
-SDLNW_Widget* button = SDLNW_CreateButtonWidget(p, s, cb);
+SDLNW_Widget* button = SDLNW_CreateGestureDetectorWidget(child_widget, (SDLNW_GestureDetectorWidget_Options){.data=&s, .on_click=on_click});
 // button should free s when it is destroyed:
 SDLNW_Widget_AddOnDestroy(button, s, free);
 ```
@@ -191,7 +193,6 @@ In no particular order.
 - [x] Sized box
 - [ ] Center box
 - [ ] Dropdown
-- [ ] Gesture Detector Widget
 
 ## Misc
 
