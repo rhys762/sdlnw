@@ -7,6 +7,7 @@ ttf_dep = dependency('SDL2_ttf')
 # lib
 sdlnw_inc = include_directories('src/lib/include')
 sdlnw_lib = static_library('SDLNW',
+'src/lib/src/canvas.c', 
 'src/lib/src/column.c', 
 'src/lib/src/composite.c',
 'src/lib/src/font.c',
@@ -27,10 +28,16 @@ include_directories: sdlnw_inc)
 # revisit
 # install: true
 
+cc = meson.get_compiler('c')
+
 sdlnw_dep = declare_dependency(include_directories: sdlnw_inc,
 link_with: sdlnw_lib)
+
+# std math lib
+m_dep = cc.find_library('m', required : false)
 
 # example programs
 executable('example_0_column', 'src/examples/0_column.c', dependencies: [sdl2_dep, ttf_dep, sdlnw_dep])
 executable('example_1_composite_state', 'src/examples/1_composite_state.c', dependencies: [sdl2_dep, ttf_dep, sdlnw_dep])
 executable('example_2_routing_and_scrolling', 'src/examples/2_routing_and_scrolling.c', dependencies: [sdl2_dep, ttf_dep, sdlnw_dep])
+executable('example_3_canvas', 'src/examples/3_canvas.c', dependencies: [sdl2_dep, ttf_dep, sdlnw_dep, m_dep])

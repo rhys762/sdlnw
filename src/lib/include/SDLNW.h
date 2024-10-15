@@ -152,9 +152,11 @@ SDLNW_Widget* SDLNW_CreateSurfaceWidget(SDLNW_Colour colour);
 SDLNW_Widget* SDLNW_CreateColumnWidget(SDLNW_WidgetList* list);
 // first on bottom, last on top
 SDLNW_Widget* SDLNW_CreateZStackWidget(SDLNW_WidgetList* list);
-// TODO, replace with generic gesture widget?
+// a widget composed of other widgets, takes a builder function
 SDLNW_Widget* SDLNW_CreateCompositeWidget(void* data, SDLNW_Widget*(*cb)(SDLNW_Widget* parent, void*data));
+// for page routing
 SDLNW_Widget* SDLNW_CreateRouterWidget(void* data, SDLNW_Widget* create_home_widget(void* data, const char* path));
+// nests a widget inside a scroll area
 SDLNW_Widget* SDLNW_CreateScrollWidget(SDLNW_Widget* child);
 // a label is intended for a single line of centered text.
 SDLNW_Widget* SDLNW_CreateLabelWidget(const char* text, SDLNW_Font* font);
@@ -180,6 +182,10 @@ typedef struct {
     void(*on_mouse_hover_off)(void* data, bool* allow_passthrough);
 } SDLNW_GestureDetectorWidget_Options;
 SDLNW_Widget* SDLNW_CreateGestureDetectorWidget(SDLNW_Widget* child, SDLNW_GestureDetectorWidget_Options options);
+// centres a smaller widget within itself
+SDLNW_Widget* SDLNW_CreateCentreWidget(SDLNW_Widget* child);
+// draws arbritrary contents
+SDLNW_Widget* SDLNW_CreateCanvasWidget(void* data, void(*cb)(void* data, const SDL_Rect* size, SDL_Renderer* renderer));
 
 // all optional and will be overriden by 'sensible' defaults if 0.
 typedef struct {

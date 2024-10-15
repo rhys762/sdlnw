@@ -85,10 +85,14 @@ static void zstack_trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType
 
     uint i = data->list->len - 1;
 
-    do {
+    while(true) {
         SDLNW_Widget_TrickleDownEvent(data->list->widgets[i], type, event_meta, allow_passthrough);
-        i--;
-    } while (i != 0);
+        if (i) {
+            i--;
+        } else {
+            break;
+        }
+    }
 }
 
 SDLNW_Widget* SDLNW_CreateZStackWidget(SDLNW_WidgetList* list) {

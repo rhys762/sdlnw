@@ -191,8 +191,9 @@ In no particular order.
 - [ ] Checkbox
 - [ ] Slider
 - [x] Sized box
-- [ ] Center box
+- [x] Center box
 - [ ] Dropdown
+- [ ] Canvas
 
 ## Misc
 
