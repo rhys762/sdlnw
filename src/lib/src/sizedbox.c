@@ -35,20 +35,18 @@ void sizedbox_destroy(SDLNW_Widget* w) {
 }
 
 
-static SDLNW_SizeRequest sizedbox_get_requested_size(SDLNW_Widget* w, enum SDLNW_SizingDimension locked_dimension, uint dimension_pixels) {
-    (void)dimension_pixels; // unused
+static SDLNW_SizeResponse sizedbox_get_requested_size(SDLNW_Widget* w, SDLNW_SizeRequest request) {
+    (void)request; // unused
+    
     struct sized_box_data* data = w->data;
-    SDLNW_SizeRequest req = {0};
+    SDLNW_SizeResponse res = {0};
 
-    if (locked_dimension == SDLNW_SizingDimension_Width) {
-        req.pixels = data->opts.height_pixels;
-        req.shares = data->opts.height_shares;
-    } else {
-        req.pixels = data->opts.width_pixels;
-        req.shares = data->opts.width_shares;
-    }
+    res.width.pixels = data->opts.width_pixels;
+    res.width.shares = data->opts.width_shares;
+    res.height.pixels = data->opts.height_pixels;
+    res.height.shares = data->opts.height_shares;
 
-    return req;
+    return res;
 }
 
 static void sizedbox_trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, bool* allow_passthrough) {

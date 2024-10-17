@@ -8,6 +8,7 @@ ttf_dep = dependency('SDL2_ttf')
 sdlnw_inc = include_directories('src/lib/include')
 sdlnw_lib = static_library('SDLNW',
 'src/lib/src/canvas.c', 
+'src/lib/src/centre.c', 
 'src/lib/src/column.c', 
 'src/lib/src/composite.c',
 'src/lib/src/font.c',

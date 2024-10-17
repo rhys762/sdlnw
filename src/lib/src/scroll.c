@@ -52,9 +52,9 @@ static void scroll_size(SDLNW_Widget* w, const SDL_Rect* rect) {
 
     w->size = *rect;
 
-    SDLNW_SizeRequest req = SDLNW_Widget_GetRequestedSize(data->child, SDLNW_SizingDimension_Width, rect->w);
+    SDLNW_SizeResponse response = SDLNW_Widget_GetRequestedSize(data->child, (SDLNW_SizeRequest) {.total_pixels_avaliable_width = rect->w, .total_pixels_avaliable_height = -1});
     
-    int pixels = (req.pixels) ? (int)req.pixels : rect->h;
+    int pixels = (response.height.pixels) ? (int)response.height.pixels : rect->h;
     pixels = max(pixels, rect->h);
 
     data->texture_width = rect->w;

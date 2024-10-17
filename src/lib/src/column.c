@@ -25,10 +25,10 @@ static void column_size(SDLNW_Widget* w, const SDL_Rect* rect) {
 
     // TOOD cache requested size? maybe
     for (uint i = 0; i < data->list->len; i++) {
-        SDLNW_SizeRequest r = SDLNW_Widget_GetRequestedSize(data->list->widgets[i], SDLNW_SizingDimension_Width, rect->w);
+        SDLNW_SizeResponse r = SDLNW_Widget_GetRequestedSize(data->list->widgets[i], (SDLNW_SizeRequest) {.total_pixels_avaliable_width = rect->w});
 
-        allocated_pixels += r.pixels;
-        shares += r.shares;
+        allocated_pixels += r.height.pixels;
+        shares += r.height.shares;
     }
 
     uint height_per_share = 0;
@@ -41,9 +41,9 @@ static void column_size(SDLNW_Widget* w, const SDL_Rect* rect) {
     // allocate space
     SDL_Rect sz = *rect;
     for (uint i = 0; i < data->list->len; i++) {
-        SDLNW_SizeRequest r = SDLNW_Widget_GetRequestedSize(data->list->widgets[i], SDLNW_SizingDimension_Width, rect->w);
+        SDLNW_SizeResponse r = SDLNW_Widget_GetRequestedSize(data->list->widgets[i], (SDLNW_SizeRequest) {.total_pixels_avaliable_width = rect->w});
 
-        int pixels = r.pixels + r.shares * height_per_share;
+        int pixels = r.height.pixels + r.height.shares * height_per_share;
 
         sz.h = pixels;
         SDLNW_Widget_Size(data->list->widgets[i], &sz);
@@ -73,35 +73,26 @@ static uint max(uint a, uint b) {
     return (a > b) ? a : b;
 }
 
-static SDLNW_SizeRequest column_get_requested_size(SDLNW_Widget* w, enum SDLNW_SizingDimension locked_dimension, uint dimension_pixels) {
+static SDLNW_SizeResponse column_get_requested_size(SDLNW_Widget* w, SDLNW_SizeRequest request) {
     struct column_data* data = w->data;
 
     uint len = data->list->len;
 
-    uint requested_pixels = 0;
-    uint requested_shares = 0;
+    SDLNW_SizeResponse response = (SDLNW_SizeResponse) {0};
 
     for (uint i = 0; i < len; i++) {
-        SDLNW_SizeRequest r = SDLNW_Widget_GetRequestedSize(data->list->widgets[i], locked_dimension, dimension_pixels);
+        SDLNW_SizeResponse r = SDLNW_Widget_GetRequestedSize(data->list->widgets[i], request);
 
+        // height is cumulative
+        response.height.pixels += r.height.pixels;
+        response.height.shares += r.height.shares;
 
-        if (locked_dimension == SDLNW_SizingDimension_Height) {
-            // max
-            requested_pixels = max(r.pixels, requested_pixels);
-            requested_shares = max(r.shares, requested_shares);
-        } else {
-            // cumulative
-            requested_pixels += r.pixels;
-            requested_shares += r.shares;
-        }
+        // width is max
+        response.width.pixels = max(response.width.pixels, r.width.pixels);
+        response.width.shares = max(response.width.shares, r.width.shares);
     }
 
-    SDLNW_SizeRequest req = (SDLNW_SizeRequest){0};
-
-    req.shares = requested_shares;
-    req.pixels = requested_pixels;
-
-    return req;
+    return response;
 }
 
 static void column_destroy(SDLNW_Widget* w) {

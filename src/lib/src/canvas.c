@@ -1,5 +1,6 @@
 #include "SDLNW.h"
 #include "internal_helpers.h"
+#include <SDL2/SDL_render.h>
 
 struct canvas_data {
     void* data;

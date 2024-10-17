@@ -73,22 +73,18 @@ static void label_destroy(SDLNW_Widget* w) {
     w->data = NULL;
 }
 
-static SDLNW_SizeRequest label_get_requested_size(SDLNW_Widget* w, enum SDLNW_SizingDimension locked_dimension, uint dimension_pixels) {
-    (void)dimension_pixels; // unused
-
+static SDLNW_SizeResponse label_get_requested_size(SDLNW_Widget* w, SDLNW_SizeRequest request) {
+    (void)request; // unused, should/can it be?
     struct label_data* data = w->data;
 
-    SDLNW_SizeRequest req = (SDLNW_SizeRequest){0};
+    SDLNW_SizeResponse req = (SDLNW_SizeResponse){0};
 
     if (data->surface != NULL) {
         const int native_width = data->surface->w;
         const int native_height = data->surface->h;
 
-        if (locked_dimension == SDLNW_SizingDimension_Height) {
-            req.pixels = native_width;
-        } else {
-            req.pixels = native_height;
-        }
+        req.width.pixels = native_width;
+        req.height.pixels = native_height;
     }
 
     return req;

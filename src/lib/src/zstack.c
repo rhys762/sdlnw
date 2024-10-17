@@ -24,7 +24,7 @@ static void zstack_size(SDLNW_Widget* w, const SDL_Rect* rect) {
     }
 }
 
-static SDL_SystemCursor max(SDL_SystemCursor a, SDL_SystemCursor b) {
+static SDL_SystemCursor max_cursor(SDL_SystemCursor a, SDL_SystemCursor b) {
     return (a > b) ? a : b;
 }
 
@@ -34,7 +34,7 @@ static SDL_SystemCursor zstack_appropriate_cursor(SDLNW_Widget* w, int x, int y)
 
     for (uint i = 0; i < data->list->len; i++) {
         SDLNW_Widget* w = data->list->widgets[i];
-        cursor = max(cursor, SDLNW_Widget_GetAppropriateCursor(w, x, y));
+        cursor = max_cursor(cursor, SDLNW_Widget_GetAppropriateCursor(w, x, y));
     }
 
     return cursor;
@@ -50,30 +50,25 @@ static void zstack_destroy(SDLNW_Widget* w) {
     w->data = NULL;
 }
 
-static SDLNW_SizeRequest zstack_get_requested_size(SDLNW_Widget* w, enum SDLNW_SizingDimension locked_dimension, uint dimension_pixels) {
+static int max(int a, int b) {
+    return (a > b) ? a : b;
+}
+
+static SDLNW_SizeResponse zstack_get_requested_size(SDLNW_Widget* w, SDLNW_SizeRequest request) {
     struct zstack_data* data = w->data;
+    SDLNW_SizeResponse response = (SDLNW_SizeResponse) {0};
 
-    int pixels = 0, shares = 0;
-
+    // take max
     for (uint i = 0; i < data->list->len; i++) {
-        SDLNW_SizeRequest req = SDLNW_Widget_GetRequestedSize(data->list->widgets[i], locked_dimension, dimension_pixels);
-        if (req.pixels) {
-            pixels += req.pixels;
-        }
-
-        if (req.shares) {
-            shares += req.shares;
-        }
+        SDLNW_SizeResponse res = SDLNW_Widget_GetRequestedSize(data->list->widgets[i], request);
+        
+        response.width.pixels = max(response.width.pixels, res.width.pixels);
+        response.width.shares = max(response.width.shares, res.width.shares);
+        response.height.pixels = max(response.height.pixels, res.height.pixels);
+        response.height.shares = max(response.height.shares, res.height.shares);
     }
 
-
-    // return 
-    SDLNW_SizeRequest req = (SDLNW_SizeRequest) {0};
-
-    req.shares = shares;
-    req.pixels = pixels;
-
-    return req;
+    return response;
 }
 
 static void zstack_trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, bool* allow_passthrough) {

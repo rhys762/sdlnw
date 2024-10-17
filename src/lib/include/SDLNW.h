@@ -18,6 +18,18 @@ typedef struct {
 struct struct_SDLNW_Widget;
 typedef struct struct_SDLNW_Widget SDLNW_Widget;
 
+// indicates how much space is avaliable
+typedef struct {
+    // if negative then flex
+    // 0 means 0
+    // in a column, height will indicate the pixels
+    // that must be shared by all rows of the column
+    // etc
+    int total_pixels_avaliable_width;
+    int total_pixels_avaliable_height;
+} SDLNW_SizeRequest;
+
+// indicates how much of avaliable space (above) is required
 typedef struct {
     // non-zero indicates the widget requests a set amount of pixels
     uint pixels;
@@ -27,7 +39,12 @@ typedef struct {
     // and another widget 2, then this widget will recieve a third of the
     // avaliable space.
     uint shares;
-} SDLNW_SizeRequest;
+} SDLNW_DimensionSizeRequest;
+
+typedef struct {
+    SDLNW_DimensionSizeRequest width;
+    SDLNW_DimensionSizeRequest height;
+} SDLNW_SizeResponse;
 
 enum SDLNW_SizingDimension {
     SDLNW_SizingDimension_Width,
@@ -68,7 +85,7 @@ typedef struct {
     SDL_SystemCursor (*appropriate_cursor)(SDLNW_Widget* w, int x, int y);
     void (*destroy)(SDLNW_Widget* w);
     // based on the size of a locked dimension, how big do you need for the other dimension?
-    SDLNW_SizeRequest (*get_requested_size)(SDLNW_Widget* w, enum SDLNW_SizingDimension locked_dimension, uint dimension_pixels);
+    SDLNW_SizeResponse (*get_requested_size)(SDLNW_Widget* w, SDLNW_SizeRequest request);
 
     // user event handling
     void (*trickle_down_event)(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, bool* allow_passthrough);
@@ -85,7 +102,7 @@ void SDLNW_Widget_Size(SDLNW_Widget* w, const SDL_Rect* rect);
 void SDLNW_Widget_Click(SDLNW_Widget* w, int x, int y);
 void SDLNW_Widget_Drag(SDLNW_Widget* w, int mouse_x_start, int mouse_y_start, int mouse_x, int mouse_y, bool still_down);
 SDL_SystemCursor SDLNW_Widget_GetAppropriateCursor(SDLNW_Widget* w, int x, int y);
-SDLNW_SizeRequest SDLNW_Widget_GetRequestedSize(SDLNW_Widget* w, enum SDLNW_SizingDimension locked_dimension, uint dimension_pixels);
+SDLNW_SizeResponse SDLNW_Widget_GetRequestedSize(SDLNW_Widget* w, SDLNW_SizeRequest request);
 void SDLNW_Widget_Destroy(SDLNW_Widget* w);
 void SDLNW_Widget_TrickleDownEvent(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, bool* allow_passthrough);
 void SDLNW_Widget_MouseScroll(SDLNW_Widget* w, int x, int y, int delta_x, int delta_y);

@@ -155,17 +155,13 @@ static void paragraph_destroy(SDLNW_Widget* w) {
     w->data = NULL;
 }
 
-static SDLNW_SizeRequest paragraph_get_requested_size(SDLNW_Widget* w, enum SDLNW_SizingDimension locked_dimension, uint dimension_pixels) {
+static SDLNW_SizeResponse paragraph_get_requested_size(SDLNW_Widget* w, SDLNW_SizeRequest request) {
     // TODO cache this?
 
-    if (locked_dimension == SDLNW_SizingDimension_Height) {
-        // meant to tell how wide based on height, TODO
-        return (SDLNW_SizeRequest){0};
-    }
+    SDLNW_SizeResponse response = (SDLNW_SizeResponse) {0};
 
     struct paragraph_data* data = w->data;
-    SDLNW_SizeRequest req = (SDLNW_SizeRequest){0};
-    SDL_Rect bounding_rect = (SDL_Rect) {.w = dimension_pixels};
+    SDL_Rect bounding_rect = (SDL_Rect) {.w = request.total_pixels_avaliable_width};
     struct text_pair* pair = data->rendered_text;
     int cursor_x = 0;
     int cursor_y = 0;
@@ -177,9 +173,9 @@ static SDLNW_SizeRequest paragraph_get_requested_size(SDLNW_Widget* w, enum SDLN
     }
 
     // height is going to be text_dest.y + text_dest.h
-    req.pixels = text_dest.y + text_dest.h;
+    response.height.pixels = text_dest.y + text_dest.h;
 
-    return req;
+    return response;
 }
 
 SDLNW_Widget* SDLNW_CreateParagraphWidget(const char* text, SDLNW_Font* font) {

@@ -49,9 +49,9 @@ static SDL_SystemCursor gesture_appropriate_cursor(SDLNW_Widget* w, int x, int y
     return cursor;
 }
 
-static SDLNW_SizeRequest gesture_get_requested_size(SDLNW_Widget* w, enum SDLNW_SizingDimension locked_dimension, uint dimension_pixels) {
+static SDLNW_SizeResponse gesture_get_requested_size(SDLNW_Widget* w, SDLNW_SizeRequest request) {
     struct gesture_data* data = w->data;
-    return SDLNW_Widget_GetRequestedSize(data->child, locked_dimension, dimension_pixels);
+    return SDLNW_Widget_GetRequestedSize(data->child, request);
 }
 
 static void gesture_trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, bool* allow_passthrough) {

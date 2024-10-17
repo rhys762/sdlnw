@@ -18,11 +18,10 @@ static void centre_size(SDLNW_Widget* w, const SDL_Rect* rect) {
     struct centre_data* data = w->data;
 
     w->size = *rect;
-    SDLNW_SizeRequest sz_req = SDLNW_Widget_GetRequestedSize(data->child, SDLNW_SizingDimension_Width, rect->w);
+    SDLNW_SizeResponse sz_res = SDLNW_Widget_GetRequestedSize(data->child, (SDLNW_SizeRequest){.total_pixels_avaliable_width = rect->w, .total_pixels_avaliable_height = rect->h});
 
-    const int requested_height = sz_req.pixels;
-    // todo
-    const int requested_width = rect->w;
+    const int requested_height = sz_res.height.pixels;
+    const int requested_width = sz_res.width.pixels;
 
     // difference between us and child
     const int delta_height = rect->h - requested_height;
@@ -53,13 +52,14 @@ static void centre_destroy(SDLNW_Widget* w) {
 }
 
 
-static SDLNW_SizeRequest centre_get_requested_size(SDLNW_Widget* w, enum SDLNW_SizingDimension locked_dimension, uint dimension_pixels) {
+static SDLNW_SizeResponse centre_get_requested_size(SDLNW_Widget* w, SDLNW_SizeRequest request) {
     struct centre_data* data = w->data;
-    return SDLNW_Widget_GetRequestedSize(data->child, locked_dimension, dimension_pixels);
+    return SDLNW_Widget_GetRequestedSize(data->child, request);
 }
 
 static void centre_trickle_down_event(SDLNW_Widget* w, enum SDLNW_EventType type, void* event_meta, bool* allow_passthrough) {
-    SDLNW_Widget_TrickleDownEvent(w, type, event_meta, allow_passthrough);
+    struct centre_data* data = w->data;
+    SDLNW_Widget_TrickleDownEvent(data->child, type, event_meta, allow_passthrough);
 }
 
 
@@ -75,7 +75,7 @@ SDLNW_Widget* SDLNW_CreateCentreWidget(SDLNW_Widget* child) {
 
     struct centre_data* data = malloc(sizeof(struct centre_data));
     *data= (struct centre_data){.child = child};
-
+    widget->data = data;
 
     return widget;
 }

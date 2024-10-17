@@ -111,8 +111,8 @@ SDL_SystemCursor SDLNW_Widget_GetAppropriateCursor(SDLNW_Widget* w, int x, int y
     return w->vtable.appropriate_cursor(w, x, y);
 }
 
-SDLNW_SizeRequest SDLNW_Widget_GetRequestedSize(SDLNW_Widget* w, enum SDLNW_SizingDimension locked_dimension, uint dimension_pixels) {
-    SDLNW_SizeRequest r = w->vtable.get_requested_size(w, locked_dimension, dimension_pixels);
+SDLNW_SizeResponse SDLNW_Widget_GetRequestedSize(SDLNW_Widget* w, SDLNW_SizeRequest request) {
+    SDLNW_SizeResponse r = w->vtable.get_requested_size(w, request);
 
     return r;
 }

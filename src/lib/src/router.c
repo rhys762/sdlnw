@@ -162,10 +162,10 @@ static void router_destroy(SDLNW_Widget* w) {
     w->data = NULL;
 }
 
-static SDLNW_SizeRequest router_get_requested_size(SDLNW_Widget* w, enum SDLNW_SizingDimension locked_dimension, uint dimension_pixels) {
+static SDLNW_SizeResponse router_get_requested_size(SDLNW_Widget* w, SDLNW_SizeRequest request) {
     struct router_data* data = w->data;
 
-    return SDLNW_Widget_GetRequestedSize(data->current, locked_dimension, dimension_pixels);
+    return SDLNW_Widget_GetRequestedSize(data->current, request);
 }
 
 static void router_trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, bool* allow_passthrough) {

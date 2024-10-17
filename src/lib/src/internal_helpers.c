@@ -28,12 +28,11 @@ static SDL_SystemCursor base_appropriate_cursor(SDLNW_Widget* w, int x, int y) {
     return SDL_SYSTEM_CURSOR_ARROW;
 }
 
-static SDLNW_SizeRequest base_get_requested_size(SDLNW_Widget* w, enum SDLNW_SizingDimension locked_dimension, uint dimension_pixels) {
+static SDLNW_SizeResponse base_get_requested_size(SDLNW_Widget* w, SDLNW_SizeRequest request) {
     (void)w; // unused
-    (void)locked_dimension; // unused
-    (void)dimension_pixels; // unused
+    (void)request; // unused
 
-    SDLNW_SizeRequest req = (SDLNW_SizeRequest){0};
+    SDLNW_SizeResponse req = (SDLNW_SizeResponse){0};
 
     return req;
 }
