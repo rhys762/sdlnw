@@ -50,9 +50,7 @@ SDLNW_Widget* build(SDLNW_Widget* parent, void* state) {
     data->app_state = state;
     data->composite = parent;
 
-    // the zstack list, we will be putting a text label on top of a surface
-    SDLNW_WidgetList* list = SDLNW_WidgetList_Create();
-
+    // colour will oscillate
     SDLNW_Colour colour;
     if (data->app_state->clicked_count % 2) {
         colour = (SDLNW_Colour) {0xFF, 0x00, 0x00};
@@ -60,24 +58,30 @@ SDLNW_Widget* build(SDLNW_Widget* parent, void* state) {
         colour = (SDLNW_Colour) {0x00, 0xFF, 0x00};
     }
 
-    SDLNW_WidgetList_Push(list, SDLNW_CreateSurfaceWidget(colour));
+    SDLNW_Widget* w = NULL;
 
     if (data->app_state->clicked_count == 0) {
-        SDLNW_WidgetList_Push(list, SDLNW_CreateLabelWidget("Click Me!", font));
+        w = SDLNW_CreateLabelWidget("Click Me!", font);
     } else {
         char* text;
         SDL_asprintf(&text, "%d clicks", data->app_state->clicked_count);
 
-        SDLNW_Widget* label = SDLNW_CreateLabelWidget(text, font);
+        w = SDLNW_CreateLabelWidget(text, font);
 
-        SDLNW_WidgetList_Push(list, label);
         // widgets can be told to run arbritrary cleanups on destruction,
         // here we free the text when the label is destroyed.
-        SDLNW_Widget_AddOnDestroy(label, text, free);
+        SDLNW_Widget_AddOnDestroy(w, text, free);
     }
+
+    // the zstack list, we will be putting a text label on top of a surface
+    SDLNW_Widget* widgets[] = {
+        SDLNW_CreateSurfaceWidget(colour),
+        w,
+        NULL
+    };
     
 
-    SDLNW_Widget* zstack = SDLNW_CreateZStackWidget(list);
+    SDLNW_Widget* zstack = SDLNW_CreateZStackWidget(widgets);
     SDLNW_Widget* button = SDLNW_CreateGestureDetectorWidget(zstack, (SDLNW_GestureDetectorWidget_Options){.data=data, .on_click=on_click});
 
     // clean up the button data that we allocated when the button is destroyed

@@ -14,17 +14,18 @@ int main(void) {
     SDL_Window* window = SDL_CreateWindow("0_column.c", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WIDTH, HEIGHT, 0);
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, 0);
 
-    // widget lists are used when we pass multiple children to a parent.
-    // parents will automatically clean up children widgets, we only need to
-    // destroy the root widget.
-    SDLNW_WidgetList *list = SDLNW_WidgetList_Create();
-
-    SDLNW_WidgetList_Push(list, SDLNW_CreateSizedBoxWidget(SDLNW_CreateSurfaceWidget((SDLNW_Colour) {0xFF, 0x00, 0x00}), (SDLNW_SizedBoxWidget_Options){.height_shares = 1}));
-    SDLNW_WidgetList_Push(list, SDLNW_CreateSizedBoxWidget(SDLNW_CreateSurfaceWidget((SDLNW_Colour) {0x00, 0xFF, 0x00}), (SDLNW_SizedBoxWidget_Options){.height_shares = 1}));
-    SDLNW_WidgetList_Push(list, SDLNW_CreateSizedBoxWidget(SDLNW_CreateSurfaceWidget((SDLNW_Colour) {0x00, 0x00, 0xFF}), (SDLNW_SizedBoxWidget_Options){.height_shares = 1}));
+    // some widgets accept child widgets as null terminated arrays.
+    // the parent will immediately copy those children into its own internal
+    // buffer, taking ownership of the child widgets but NOT the array itself
+    SDLNW_Widget* widgets[] = {
+        SDLNW_CreateSizedBoxWidget(SDLNW_CreateSurfaceWidget((SDLNW_Colour) {0xFF, 0x00, 0x00}), (SDLNW_SizedBoxWidget_Options){.height_shares = 1}),
+        SDLNW_CreateSizedBoxWidget(SDLNW_CreateSurfaceWidget((SDLNW_Colour) {0x00, 0xFF, 0x00}), (SDLNW_SizedBoxWidget_Options){.height_shares = 1}),
+        SDLNW_CreateSizedBoxWidget(SDLNW_CreateSurfaceWidget((SDLNW_Colour) {0x00, 0x00, 0xFF}), (SDLNW_SizedBoxWidget_Options){.height_shares = 1}),
+        NULL
+    };
 
     // our root widget
-    SDLNW_Widget* column = SDLNW_CreateColumnWidget(list);
+    SDLNW_Widget* column = SDLNW_CreateColumnWidget(widgets);
 
     int running = 1;
     SDL_Event event;

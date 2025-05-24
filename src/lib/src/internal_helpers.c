@@ -97,3 +97,27 @@ bool is_point_within_rect(int x, int y, const SDL_Rect* rect) {
     return x >= rect->x && x < rect->x + rect->w &&
         y >= rect->y && y < rect->y + rect->h;
 }
+
+void _sdlnw_copy_null_terminated(SDLNW_Widget** src_null_terminted, SDLNW_Widget*** target, size_t* target_length) {
+    size_t len = 0;
+    const size_t max = 2000;
+
+    while(src_null_terminted[len] != NULL && len < max) {
+        len += 1;
+    }
+
+    if (len == max) {
+        // Too long, might not have been array
+        *target = NULL;
+        *target_length = 0;
+        return;
+    }
+
+    SDLNW_Widget** p = malloc(len * sizeof(SDLNW_Widget*));
+    for (size_t i = 0; i < len; i++) {
+        p[i] = src_null_terminted[i];
+    }
+
+    *target = p;
+    *target_length = len;
+}

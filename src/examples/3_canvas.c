@@ -42,18 +42,16 @@ void canvas_draw(void* data, const SDL_Rect* size, SDL_Renderer* renderer) {
 }
 
 SDLNW_Widget* create_app(void) {
-    SDLNW_WidgetList* list = SDLNW_WidgetList_Create();
-
-    SDLNW_WidgetList_Push(list, SDLNW_CreateSurfaceWidget((SDLNW_Colour){.b = 0xFF}));
-    SDLNW_WidgetList_Push(list, 
-    SDLNW_CreateCentreWidget(
+    SDLNW_Widget* widgets[] = {
+        SDLNW_CreateSurfaceWidget((SDLNW_Colour){.b = 0xFF}),
+        SDLNW_CreateCentreWidget(
         SDLNW_CreateSizedBoxWidget(
-            SDLNW_CreateCanvasWidget(NULL, canvas_draw),
-        (SDLNW_SizedBoxWidget_Options){.width_pixels = 200, .height_pixels = 200})
-        )
-    );
+            SDLNW_CreateCanvasWidget(NULL, canvas_draw), (SDLNW_SizedBoxWidget_Options){.width_pixels = 200, .height_pixels = 200})
+        ),
+        NULL
+    };
 
-    return SDLNW_CreateZStackWidget(list);
+    return SDLNW_CreateZStackWidget(widgets);
 }
 
 int main(void) {

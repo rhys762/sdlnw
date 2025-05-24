@@ -53,10 +53,10 @@ void button_on_mouse_hover_off(void* data, bool* allow_passthrough) {
 }
 
 static Uint8 increment_without_overflow(Uint8 a, Uint8 b) {
-    uint aa = a;
-    uint bb = b;
+    Uint16 aa = a;
+    Uint16 bb = b;
 
-    uint cc = aa + bb;
+    Uint16 cc = aa + bb;
 
     if (cc > 0xFF) {
         cc = 0xFF;
@@ -82,12 +82,13 @@ SDLNW_Widget* create_button_builder(SDLNW_Widget* parent, void* data) {
         };
     }
 
-    SDLNW_WidgetList* list = SDLNW_WidgetList_Create();
+    SDLNW_Widget* widgets[] = {
+        SDLNW_CreateSurfaceWidget(c),
+        SDLNW_CreateLabelWidget(button_data->text, font),
+        NULL
+    };
 
-    SDLNW_WidgetList_Push(list, SDLNW_CreateSurfaceWidget(c));
-    SDLNW_WidgetList_Push(list, SDLNW_CreateLabelWidget(button_data->text, font));
-
-    SDLNW_Widget* zstack = SDLNW_CreateZStackWidget(list);
+    SDLNW_Widget* zstack = SDLNW_CreateZStackWidget(widgets);
 
     return zstack;
 }
@@ -147,19 +148,21 @@ SDLNW_Widget* create_paragraph(void * data, const char * path) {
     (void)data; // unused
     (void)path; // unused
 
-    SDLNW_WidgetList* column_list = SDLNW_WidgetList_Create();
-
-    SDLNW_WidgetList_Push(column_list, SDLNW_CreateParagraphWidget(text, font));
-
     SDLNW_Colour blue = {.b = 0xFF};
-    SDLNW_WidgetList_Push(column_list, create_button("Click to go Back", blue, route_back));
 
-    SDLNW_WidgetList* zstack_list = SDLNW_WidgetList_Create();
+    SDLNW_Widget* column_widgets[] = {
+        SDLNW_CreateParagraphWidget(text, font),
+        create_button("Click to go Back", blue, route_back),
+        NULL
+    };
 
-    SDLNW_WidgetList_Push(zstack_list, SDLNW_CreateSurfaceWidget((SDLNW_Colour) {0xFF, 0x00, 0x00}));
-    SDLNW_WidgetList_Push(zstack_list, SDLNW_CreateColumnWidget(column_list));
+    SDLNW_Widget* zstack_widgets[] = {
+        SDLNW_CreateSurfaceWidget((SDLNW_Colour) {0xFF, 0x00, 0x00}),
+        SDLNW_CreateColumnWidget(column_widgets),
+        NULL
+    };
 
-    SDLNW_Widget* zstack =  SDLNW_CreateZStackWidget(zstack_list);
+    SDLNW_Widget* zstack =  SDLNW_CreateZStackWidget(zstack_widgets);
     return SDLNW_CreateScrollWidget(zstack);
 }
 

@@ -38,15 +38,15 @@ struct on_destroy_pair {
 };
 
 struct on_destroy_list {
-    uint cap;
-    uint len;
+    size_t cap;
+    size_t len;
     struct on_destroy_pair* arr;
 };
 
 void SDLNW_Widget_Destroy(SDLNW_Widget* w) {
     struct on_destroy_list* lst = w->on_destroy_list;
     if (lst != NULL) {
-        for (uint i = 0; i < lst->len; i++) {
+        for (size_t i = 0; i < lst->len; i++) {
             lst->arr[i].cb(lst->arr[i].data);
         }
         free(lst->arr);
@@ -86,27 +86,6 @@ void SDLNW_Widget_AddOnDestroy(SDLNW_Widget* w, void* data, void(*cb)(void* data
     lst->len += 1;
 }
 
-SDLNW_WidgetList* SDLNW_WidgetList_Create(void) {
-    SDLNW_WidgetList* list = malloc(sizeof(SDLNW_WidgetList));
-
-    list->cap = 4;
-    list->len = 0;
-    list->widgets = malloc(list->cap * sizeof(SDLNW_Widget*));
-
-    return list;
-}
-
-void SDLNW_WidgetList_Push(SDLNW_WidgetList* list, SDLNW_Widget* w) {
-    if (list->len >= list->cap) {
-        list->cap *= 2;
-        list->widgets = realloc(list->widgets, list->cap * sizeof(SDLNW_Widget*));
-        assert(list->widgets != NULL);
-    }
-
-    list->widgets[list->len] = w;
-    list->len += 1;
-}
-
 SDL_SystemCursor SDLNW_Widget_GetAppropriateCursor(SDLNW_Widget* w, int x, int y) {
     return w->vtable.appropriate_cursor(w, x, y);
 }
@@ -115,20 +94,6 @@ SDLNW_SizeResponse SDLNW_Widget_GetRequestedSize(SDLNW_Widget* w, SDLNW_SizeRequ
     SDLNW_SizeResponse r = w->vtable.get_requested_size(w, request);
 
     return r;
-}
-
-void SDLNW_WidgetList_Destroy(SDLNW_WidgetList* list) {
-    for (uint i = 0; i < list->len; i++) {
-        SDLNW_Widget_Destroy(list->widgets[i]);
-        list->widgets[i] = NULL;
-    }
-
-    free(list->widgets);
-    list->widgets = NULL;
-    list->cap = 0;
-    list->len = 0;
-
-    free(list);
 }
 
 void SDLNW_Widget_TrickleDownEvent(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, bool* allow_passthrough) {

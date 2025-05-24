@@ -2,14 +2,15 @@
 #include "../include/internal_helpers.h"
 
 struct column_data {
-    SDLNW_WidgetList* list;
+    SDLNW_Widget** list;
+    size_t list_len;
 };
 
 static void column_draw(SDLNW_Widget* w, SDL_Renderer* renderer) {
     struct column_data* data = w->data;
 
-    for (uint i = 0; i < data->list->len; i++) {
-        SDLNW_Widget_Draw(data->list->widgets[i], renderer);
+    for (size_t i = 0; i < data->list_len; i++) {
+        SDLNW_Widget_Draw(data->list[i], renderer);
     }
 }
 
@@ -20,33 +21,33 @@ static void column_size(SDLNW_Widget* w, const SDL_Rect* rect) {
 
     // find out how much space we have to work with
 
-    uint allocated_pixels = 0;
-    uint shares = 0;
+    size_t allocated_pixels = 0;
+    size_t shares = 0;
 
     // TOOD cache requested size? maybe
-    for (uint i = 0; i < data->list->len; i++) {
-        SDLNW_SizeResponse r = SDLNW_Widget_GetRequestedSize(data->list->widgets[i], (SDLNW_SizeRequest) {.total_pixels_avaliable_width = rect->w});
+    for (size_t i = 0; i < data->list_len; i++) {
+        SDLNW_SizeResponse r = SDLNW_Widget_GetRequestedSize(data->list[i], (SDLNW_SizeRequest) {.total_pixels_avaliable_width = rect->w});
 
         allocated_pixels += r.height.pixels;
         shares += r.height.shares;
     }
 
-    uint height_per_share = 0;
+    size_t height_per_share = 0;
 
-    if (allocated_pixels < (uint)rect->h && shares) {
-        uint leftover = rect->h - allocated_pixels;
+    if (allocated_pixels < (size_t)rect->h && shares) {
+        size_t leftover = rect->h - allocated_pixels;
         height_per_share = leftover / shares;
     }
 
     // allocate space
     SDL_Rect sz = *rect;
-    for (uint i = 0; i < data->list->len; i++) {
-        SDLNW_SizeResponse r = SDLNW_Widget_GetRequestedSize(data->list->widgets[i], (SDLNW_SizeRequest) {.total_pixels_avaliable_width = rect->w});
+    for (size_t i = 0; i < data->list_len; i++) {
+        SDLNW_SizeResponse r = SDLNW_Widget_GetRequestedSize(data->list[i], (SDLNW_SizeRequest) {.total_pixels_avaliable_width = rect->w});
 
         int pixels = r.height.pixels + r.height.shares * height_per_share;
 
         sz.h = pixels;
-        SDLNW_Widget_Size(data->list->widgets[i], &sz);
+        SDLNW_Widget_Size(data->list[i], &sz);
         sz.y += pixels;
     }
 }
@@ -59,8 +60,8 @@ static SDL_SystemCursor column_appropriate_cursor(SDLNW_Widget* w, int x, int y)
     struct column_data* data = w->data;
     SDL_SystemCursor cursor = SDL_SYSTEM_CURSOR_ARROW;
 
-    for (uint i = 0; i < data->list->len; i++) {
-        SDLNW_Widget* w = data->list->widgets[i];
+    for (size_t i = 0; i < data->list_len; i++) {
+        SDLNW_Widget* w = data->list[i];
         if (is_point_within_rect(x, y, &w->size)) {
             cursor = max_cursor(cursor, SDLNW_Widget_GetAppropriateCursor(w, x, y));
         }
@@ -69,19 +70,19 @@ static SDL_SystemCursor column_appropriate_cursor(SDLNW_Widget* w, int x, int y)
     return cursor;
 }
 
-static uint max(uint a, uint b) {
+static size_t max(size_t a, size_t b) {
     return (a > b) ? a : b;
 }
 
 static SDLNW_SizeResponse column_get_requested_size(SDLNW_Widget* w, SDLNW_SizeRequest request) {
     struct column_data* data = w->data;
 
-    uint len = data->list->len;
+    size_t len = data->list_len;
 
     SDLNW_SizeResponse response = (SDLNW_SizeResponse) {0};
 
-    for (uint i = 0; i < len; i++) {
-        SDLNW_SizeResponse r = SDLNW_Widget_GetRequestedSize(data->list->widgets[i], request);
+    for (size_t i = 0; i < len; i++) {
+        SDLNW_SizeResponse r = SDLNW_Widget_GetRequestedSize(data->list[i], request);
 
         // height is cumulative
         response.height.pixels += r.height.pixels;
@@ -98,8 +99,10 @@ static SDLNW_SizeResponse column_get_requested_size(SDLNW_Widget* w, SDLNW_SizeR
 static void column_destroy(SDLNW_Widget* w) {
     struct column_data* data = w->data;
 
-    SDLNW_WidgetList_Destroy(data->list);
+    free(data->list);
     data->list = NULL;
+
+    data->list_len = 0;
 
     free(data);
     w->data = NULL;
@@ -108,12 +111,12 @@ static void column_destroy(SDLNW_Widget* w) {
 static void column_trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, bool* allow_passthrough) {
     struct column_data* data = widget->data;
 
-    for (uint i = 0; i < data->list->len; i++) {
-        SDLNW_Widget_TrickleDownEvent(data->list->widgets[i], type, event_meta, allow_passthrough);
+    for (size_t i = 0; i < data->list_len; i++) {
+        SDLNW_Widget_TrickleDownEvent(data->list[i], type, event_meta, allow_passthrough);
     }
 }
 
-SDLNW_Widget* SDLNW_CreateColumnWidget(SDLNW_WidgetList* list) {
+SDLNW_Widget* SDLNW_CreateColumnWidget(SDLNW_Widget** null_terminated_array) {
     SDLNW_Widget* widget = create_default_widget();
 
     widget->vtable.draw = column_draw;
@@ -124,7 +127,9 @@ SDLNW_Widget* SDLNW_CreateColumnWidget(SDLNW_WidgetList* list) {
     widget->vtable.trickle_down_event = column_trickle_down_event;
 
     widget->data = malloc(sizeof(struct column_data));
-    *((struct column_data*)widget->data) = (struct column_data){ .list = list };
+    struct column_data* data = widget->data;
+    *data = (struct column_data){0};
+    _sdlnw_copy_null_terminated(null_terminated_array, &data->list, &data->list_len);
 
     return widget;
 }
