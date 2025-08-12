@@ -30,7 +30,7 @@ static void composite_destroy(SDLNW_Widget* w) {
 
     SDLNW_Widget_Destroy(data->child);
 
-    free(w->data);
+    __sdlnw_free(w->data);
     w->data = NULL;
 }
 
@@ -68,7 +68,7 @@ SDLNW_Widget* SDLNW_CreateCompositeWidget(void* data, SDLNW_Widget*(*cb)(SDLNW_W
     widget->vtable.get_requested_size = composite_get_requested_size;
     widget->vtable.trickle_down_event = composite_trickle_down_event;
 
-    widget->data = malloc(sizeof(struct composite_data));
+    widget->data = __sdlnw_malloc(sizeof(struct composite_data));
     *((struct composite_data*)widget->data) = (struct composite_data){ .child = NULL, .data = data, .cb = cb};
 
     SDLNW_Widget_Recompose(widget);

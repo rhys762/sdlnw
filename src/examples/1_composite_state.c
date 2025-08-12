@@ -53,9 +53,9 @@ SDLNW_Widget* build(SDLNW_Widget* parent, void* state) {
     // colour will oscillate
     SDLNW_Colour colour;
     if (data->app_state->clicked_count % 2) {
-        colour = (SDLNW_Colour) {0xFF, 0x00, 0x00};
+        colour = (SDLNW_Colour) {0xFF, 0x00, 0x00, 0xFF};
     } else {
-        colour = (SDLNW_Colour) {0x00, 0xFF, 0x00};
+        colour = (SDLNW_Colour) {0x00, 0xFF, 0x00, 0xFF};
     }
 
     SDLNW_Widget* w = NULL;
@@ -123,6 +123,8 @@ int main(int argc, char** argv) {
 
     TTF_Quit();
     SDL_Quit();
+
+    SDLNW_debug_report_leaks();
 
     return 0;
 }

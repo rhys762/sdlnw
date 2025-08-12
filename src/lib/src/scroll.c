@@ -2,6 +2,7 @@
 #include "../include/internal_helpers.h"
 #include <SDL2/SDL_blendmode.h>
 #include <SDL2/SDL_render.h>
+#include <assert.h>
 
 struct scroll_data {
     SDLNW_Widget* child;
@@ -92,7 +93,7 @@ static void scroll_destroy(SDLNW_Widget* w) {
     SDL_DestroyTexture(data->texture);
     data->texture = NULL;
 
-    free(w->data);
+    __sdlnw_free(w->data);
     w->data = NULL;
 }
 
@@ -107,7 +108,6 @@ static SDL_SystemCursor scroll_appropriate_cursor(SDLNW_Widget* w, int x, int y)
 static void scroll_trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, bool* allow_passthrough) {
     struct scroll_data* data = widget->data;
 
-    SDLNW_Event_Click click_event = {0};
     SDLNW_Event_MouseMove motion_event = {0};
 
     int x_offset = data->window.x - widget->size.x;
@@ -117,6 +117,8 @@ static void scroll_trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType
     if (type == SDLNW_EventType_Click) {
         // get offset from the scroll widget, then add offset of scroll
         SDLNW_Event_Click* incoming = event_meta;
+
+        SDLNW_Event_Click click_event = *incoming;
 
         click_event.x = incoming->x + x_offset;
         click_event.y = incoming->y + y_offset;
@@ -134,7 +136,19 @@ static void scroll_trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType
         };
 
         event_meta = &motion_event;
+    }
+    else if (type == SDLNW_EventType_MouseDrag) {
+        // TODO save position on drag start, scroll might
+        // change while dragging.
+        SDLNW_Event_Drag* incoming = event_meta;
+        SDLNW_Event_Drag drag = *incoming;
 
+        drag.mouse_x += x_offset;
+        drag.mouse_y += y_offset;
+        drag.origin_x += x_offset;
+        drag.origin_y += y_offset;
+
+        event_meta = &drag;
     }
     // TODO scroll should produce a mouce motion event,
     // since we may have scrolled somthing under/out from under the mouse.
@@ -213,7 +227,7 @@ SDLNW_Widget* SDLNW_CreateScrollWidget(SDLNW_Widget* child) {
     widget->vtable.mouse_scroll = scroll_mouse_scroll;
     widget->vtable.drag = scroll_drag;
 
-    struct scroll_data* data = malloc(sizeof(struct scroll_data));
+    struct scroll_data* data = __sdlnw_malloc(sizeof(struct scroll_data));
     *data = (struct scroll_data) {.child = child};
     widget->data = data;
 

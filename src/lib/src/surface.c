@@ -5,12 +5,12 @@
 static void surface_draw(SDLNW_Widget* w, SDL_Renderer* renderer) {
     SDLNW_Colour*c = w->data;
 
-    SDL_SetRenderDrawColor(renderer, c->r, c->g, c->b, 0xFF);
+    SDL_SetRenderDrawColor(renderer, c->r, c->g, c->b, c->a);
     SDL_RenderFillRect(renderer, &w->size);
 }
 
 static void surface_destroy(SDLNW_Widget* w) {
-    free(w->data);
+    __sdlnw_free(w->data);
     w->data = NULL;
 }
 
@@ -20,7 +20,7 @@ SDLNW_Widget* SDLNW_CreateSurfaceWidget(SDLNW_Colour colour) {
     widget->vtable.draw = surface_draw;
     widget->vtable.destroy = surface_destroy;
 
-    widget->data = malloc(sizeof(SDLNW_Colour));
+    widget->data = __sdlnw_malloc(sizeof(SDLNW_Colour));
     *(SDLNW_Colour*)(widget->data) = colour;
 
     return widget;

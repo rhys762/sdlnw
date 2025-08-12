@@ -17,7 +17,7 @@ SDLNW_Widget* SDLNW_CreateCanvasWidget(void* data, void(*cb)(void* data, const S
 
     widget->vtable.draw = canvas_draw;
 
-    struct canvas_data* d = malloc(sizeof(struct canvas_data));
+    struct canvas_data* d = __sdlnw_malloc(sizeof(struct canvas_data));
     *d = (struct canvas_data){
         .data = data,
         .cb = cb

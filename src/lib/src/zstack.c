@@ -43,12 +43,16 @@ static SDL_SystemCursor zstack_appropriate_cursor(SDLNW_Widget* w, int x, int y)
 
 static void zstack_destroy(SDLNW_Widget* w) {
     struct zstack_data* data = w->data;
+
+    for (size_t i = 0; i < data->list_len; i++) {
+        SDLNW_Widget_Destroy(data->list[i]);
+    }
     
-    free(data->list);
+    __sdlnw_free(data->list);
     data->list = NULL;
     data->list_len = 0;
 
-    free(data);
+    __sdlnw_free(data);
     w->data = NULL;
 }
 
@@ -102,7 +106,7 @@ SDLNW_Widget* SDLNW_CreateZStackWidget(SDLNW_Widget** null_terminated_array) {
     widget->vtable.get_requested_size = zstack_get_requested_size;
     widget->vtable.trickle_down_event = zstack_trickle_down_event;
 
-    widget->data = malloc(sizeof(struct zstack_data));
+    widget->data = __sdlnw_malloc(sizeof(struct zstack_data));
     struct zstack_data* data = widget->data;
     *data = (struct zstack_data){0};
     _sdlnw_copy_null_terminated(null_terminated_array, &data->list, &data->list_len);

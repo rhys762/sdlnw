@@ -1,4 +1,5 @@
 #include "../include/SDLNW.h"
+#include "internal_helpers.h"
 #include "SDL2/SDL_ttf.h"
 
 SDLNW_Font* SDLNW_Font_Create(const char* path, int ptsize) {
@@ -9,9 +10,10 @@ SDLNW_Font* SDLNW_Font_Create(const char* path, int ptsize) {
         return NULL;
     }
 
-    SDLNW_Font* font = malloc(sizeof(SDLNW_Font));
+    SDLNW_Font* font = __sdlnw_malloc(sizeof(SDLNW_Font));
 
     font->font = f;
+    font->line_height = TTF_FontLineSkip(f);
 
     return font;
 }
@@ -20,5 +22,5 @@ void SDLNW_Font_Destroy(SDLNW_Font* font) {
     TTF_CloseFont(font->font);
     font->font = NULL;
 
-    free(font);
+    __sdlnw_free(font);
 }

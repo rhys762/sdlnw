@@ -47,7 +47,7 @@ static void centre_destroy(SDLNW_Widget* w) {
     struct centre_data* data = w->data;
     SDLNW_Widget_Destroy(data->child);
 
-    free(w->data);
+    __sdlnw_free(w->data);
     w->data = NULL;
 }
 
@@ -73,7 +73,7 @@ SDLNW_Widget* SDLNW_CreateCentreWidget(SDLNW_Widget* child) {
     widget->vtable.get_requested_size = centre_get_requested_size;
     widget->vtable.trickle_down_event = centre_trickle_down_event;
 
-    struct centre_data* data = malloc(sizeof(struct centre_data));
+    struct centre_data* data = __sdlnw_malloc(sizeof(struct centre_data));
     *data= (struct centre_data){.child = child};
     widget->data = data;
 

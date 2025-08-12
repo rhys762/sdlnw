@@ -19,6 +19,10 @@ static void gesture_size(SDLNW_Widget* w, const SDL_Rect* rect) {
 }
 
 static void gesture_click(SDLNW_Widget* w, SDLNW_Event_Click* event, bool* allow_passthrough) {
+    if (!is_point_within_rect(event->x, event->y, &w->size)) {
+        return;
+    }
+
     struct gesture_data* data = w->data;
     if (data->options.on_click) {
         data->options.on_click(data->options.data, event->x, event->y, allow_passthrough);
@@ -30,7 +34,7 @@ static void gesture_destroy(SDLNW_Widget* w) {
 
     SDLNW_Widget_Destroy(data->child);
 
-    free(w->data);
+    __sdlnw_free(w->data);
     w->data = NULL;
 }
 
@@ -94,6 +98,15 @@ static void gesture_on_hover_off(SDLNW_Widget* widget, SDLNW_Event_MouseMove* ev
     }
 }
 
+static void gesture_on_key_up(SDLNW_Widget* widget, SDLNW_Event_KeyUp* event, bool* allow_passthrough) {
+    (void)event; // unused
+    struct gesture_data* data = widget->data;
+
+    if (data->options.on_key_up) {
+        data->options.on_key_up(data->options.data, event->key, allow_passthrough);
+    }
+}
+
 SDLNW_Widget* SDLNW_CreateGestureDetectorWidget(SDLNW_Widget* child, SDLNW_GestureDetectorWidget_Options options) {
     SDLNW_Widget* widget = create_default_widget();
 
@@ -108,8 +121,9 @@ SDLNW_Widget* SDLNW_CreateGestureDetectorWidget(SDLNW_Widget* child, SDLNW_Gestu
     widget->vtable.drag = gesture_drag;
     widget->vtable.on_hover_on = gesture_on_hover_on;
     widget->vtable.on_hover_off = gesture_on_hover_off;
+    widget->vtable.on_key_up = gesture_on_key_up;
 
-    struct gesture_data* data = malloc(sizeof(struct gesture_data));
+    struct gesture_data* data = __sdlnw_malloc(sizeof(struct gesture_data));
     *data = (struct gesture_data){.child = child, .options = options};
 
     widget->data = data;

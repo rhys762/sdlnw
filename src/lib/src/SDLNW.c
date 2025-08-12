@@ -18,9 +18,9 @@ void SDLNW_Widget_Size(SDLNW_Widget* w, const SDL_Rect* rect) {
     w->vtable.size(w, rect);
 }
 
-void SDLNW_Widget_Click(SDLNW_Widget* w, int x, int y) {
+void SDLNW_Widget_Click(SDLNW_Widget* w, int x, int y, Uint8 clicks) {
     SDLNW_Event_Click event = (SDLNW_Event_Click){
-        .x = x, .y = y
+        .x = x, .y = y, .clicks = clicks
     };
 
     SDLNW_Widget_TrickleDownEvent(w, SDLNW_EventType_Click, &event, NULL);
@@ -49,13 +49,13 @@ void SDLNW_Widget_Destroy(SDLNW_Widget* w) {
         for (size_t i = 0; i < lst->len; i++) {
             lst->arr[i].cb(lst->arr[i].data);
         }
-        free(lst->arr);
-        free(lst);
+        __sdlnw_free(lst->arr);
+        __sdlnw_free(lst);
         w->on_destroy_list = NULL;
     }
 
     w->vtable.destroy(w);
-    free(w);
+    __sdlnw_free(w);
 }
 
 void SDLNW_Widget_AddOnDestroy(SDLNW_Widget* w, void* data, void(*cb)(void* data)) {
@@ -63,21 +63,21 @@ void SDLNW_Widget_AddOnDestroy(SDLNW_Widget* w, void* data, void(*cb)(void* data
 
     // lazy allocate
     if (lst == NULL) {
-        w->on_destroy_list = malloc(sizeof(struct on_destroy_list));
+        w->on_destroy_list = __sdlnw_malloc(sizeof(struct on_destroy_list));
         assert(w->on_destroy_list != NULL);
 
         lst = w->on_destroy_list;
 
         lst->cap = 2;
         lst->len = 0;
-        lst->arr = malloc(lst->cap * sizeof(struct on_destroy_pair));
+        lst->arr = __sdlnw_malloc(lst->cap * sizeof(struct on_destroy_pair));
         assert(lst->arr != NULL);
     }
 
     // at capacity, grow
     if (lst->len == lst->cap) {
         lst->cap *= 2;
-        lst->arr = realloc(lst->arr, lst->cap * sizeof(struct on_destroy_pair));
+        lst->arr = __sdlnw_realloc(lst->arr, lst->cap * sizeof(struct on_destroy_pair));
         assert(lst->arr != NULL);
     }
 
@@ -112,9 +112,7 @@ void SDLNW_Widget_TrickleDownEvent(SDLNW_Widget* widget, enum SDLNW_EventType ty
             case SDLNW_EventType_Click:
                 {
                     SDLNW_Event_Click* e = event_meta;
-                    if (is_point_within_rect(e->x, e->y, &widget->size)) {
-                        widget->vtable.click(widget, e, allow_passthrough);
-                    }
+                    widget->vtable.click(widget, e, allow_passthrough);
                 }
                 break;
             case SDLNW_EventType_MouseScroll:
@@ -148,6 +146,17 @@ void SDLNW_Widget_TrickleDownEvent(SDLNW_Widget* widget, enum SDLNW_EventType ty
                     }
                 }
                 break;
+            case SDLNW_EventType_KeyUp:
+                {
+                    SDLNW_Event_KeyUp* e = event_meta;
+                    widget->vtable.on_key_up(widget, e, allow_passthrough);
+                }
+                break;
+            case SDLNW_EventType_TextInput:
+                {
+                    SDLNW_Event_TextInput*e = event_meta;
+                    widget->vtable.on_text_input(widget, e, allow_passthrough);
+                }
         }
     }
 }
@@ -187,6 +196,8 @@ void SDLNW_bootstrap(SDLNW_Widget* widget, SDLNW_BootstrapOptions options) {
     SDL_Window* window = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, screen_width, screen_height, window_flags);
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, 0);
 
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+
     SDLNW_Widget_Size(widget, &(SDL_Rect) {.x = 0, .y = 0, .w = screen_width, .h = screen_height});
 
     int mouse_x_down, mouse_y_down, mouse_x, mouse_y;
@@ -211,7 +222,7 @@ void SDLNW_bootstrap(SDLNW_Widget* widget, SDLNW_BootstrapOptions options) {
                 mouse_is_down = false;
 
                 if (square_sum(mouse_x_down - mouse_x, mouse_y_down - mouse_y) < 25) {
-                    SDLNW_Widget_Click(widget, mouse_x, mouse_y);
+                    SDLNW_Widget_Click(widget, mouse_x, mouse_y, event.button.clicks);
                 } else {
                     SDLNW_Widget_Drag(widget, mouse_x_down, mouse_y_down, mouse_x, mouse_y, mouse_is_down);
                 }
@@ -239,9 +250,39 @@ void SDLNW_bootstrap(SDLNW_Widget* widget, SDLNW_BootstrapOptions options) {
                     SDL_GetWindowSize(window, &screen_width, &screen_height);
                     SDLNW_Widget_Size(widget, &(SDL_Rect) {.x = 0, .y = 0, .w = screen_width, .h = screen_height});
                 }
+                else if (event.window.event == SDL_WINDOWEVENT_LEAVE) {
+                    int last_x = mouse_x;
+                    int last_y = mouse_y;
+
+                    mouse_x = -1;
+                    mouse_y = -1;
+
+                    SDLNW_Event_MouseMove mm_event = {
+                        .current_x = mouse_x,
+                        .current_y = mouse_y,
+                        .last_x = last_x,
+                        .last_y = last_y
+                    };
+
+                    SDLNW_Widget_TrickleDownEvent(widget, SDLNW_EventType_MouseMove, &mm_event, NULL);
+                }
             }
             else if (event.type == SDL_MOUSEWHEEL) {
                 SDLNW_Widget_MouseScroll(widget, mouse_x, mouse_y, event.wheel.x, event.wheel.y);
+            }
+            else if (event.type == SDL_TEXTINPUT) {
+                SDLNW_Event_TextInput tinput = {
+                    .text = event.text.text
+                };
+
+                SDLNW_Widget_TrickleDownEvent(widget, SDLNW_EventType_TextInput, &tinput, NULL);
+            }
+            else if (event.type == SDL_KEYUP) {
+                SDLNW_Event_KeyUp ku_event = {
+                    .key = event.key.keysym.sym
+                };
+
+                SDLNW_Widget_TrickleDownEvent(widget, SDLNW_EventType_KeyUp, &ku_event, NULL);
             }
         }
 

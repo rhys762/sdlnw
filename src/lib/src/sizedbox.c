@@ -30,7 +30,7 @@ void sizedbox_destroy(SDLNW_Widget* w) {
     SDLNW_Widget_Destroy(data->child);
     data->child = NULL;
 
-    free(data);
+    __sdlnw_free(data);
     w->data = NULL;
 }
 
@@ -64,7 +64,7 @@ SDLNW_Widget* SDLNW_CreateSizedBoxWidget(SDLNW_Widget* child, SDLNW_SizedBoxWidg
     widget->vtable.get_requested_size = sizedbox_get_requested_size;
     widget->vtable.trickle_down_event = sizedbox_trickle_down_event;
 
-    struct sized_box_data* data = malloc(sizeof(struct sized_box_data));
+    struct sized_box_data* data = __sdlnw_malloc(sizeof(struct sized_box_data));
     *data = (struct sized_box_data){.child = child, .opts = opts};
     widget->data = data;
 

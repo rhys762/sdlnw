@@ -69,7 +69,7 @@ static void label_destroy(SDLNW_Widget* w) {
         data->texture = NULL;
     } 
 
-    free(w->data);
+    __sdlnw_free(w->data);
     w->data = NULL;
 }
 
@@ -98,7 +98,7 @@ SDLNW_Widget* SDLNW_CreateLabelWidget(const char* text, SDLNW_Font* font) {
     widget->vtable.destroy = label_destroy;
     widget->vtable.get_requested_size = label_get_requested_size;
 
-    widget->data = malloc(sizeof(struct label_data));
+    widget->data = __sdlnw_malloc(sizeof(struct label_data));
 
     struct label_data* data = widget->data;
     *data = (struct label_data){0};

@@ -18,9 +18,9 @@ int main(void) {
     // the parent will immediately copy those children into its own internal
     // buffer, taking ownership of the child widgets but NOT the array itself
     SDLNW_Widget* widgets[] = {
-        SDLNW_CreateSizedBoxWidget(SDLNW_CreateSurfaceWidget((SDLNW_Colour) {0xFF, 0x00, 0x00}), (SDLNW_SizedBoxWidget_Options){.height_shares = 1}),
-        SDLNW_CreateSizedBoxWidget(SDLNW_CreateSurfaceWidget((SDLNW_Colour) {0x00, 0xFF, 0x00}), (SDLNW_SizedBoxWidget_Options){.height_shares = 1}),
-        SDLNW_CreateSizedBoxWidget(SDLNW_CreateSurfaceWidget((SDLNW_Colour) {0x00, 0x00, 0xFF}), (SDLNW_SizedBoxWidget_Options){.height_shares = 1}),
+        SDLNW_CreateSizedBoxWidget(SDLNW_CreateSurfaceWidget((SDLNW_Colour) {0xFF, 0x00, 0x00, 0XFF}), (SDLNW_SizedBoxWidget_Options){.height_shares = 1}),
+        SDLNW_CreateSizedBoxWidget(SDLNW_CreateSurfaceWidget((SDLNW_Colour) {0x00, 0xFF, 0x00, 0XFF}), (SDLNW_SizedBoxWidget_Options){.height_shares = 1}),
+        SDLNW_CreateSizedBoxWidget(SDLNW_CreateSurfaceWidget((SDLNW_Colour) {0x00, 0x00, 0xFF, 0XFF}), (SDLNW_SizedBoxWidget_Options){.height_shares = 1}),
         NULL
     };
 
@@ -54,6 +54,8 @@ int main(void) {
     SDLNW_Widget_Destroy(column);
 
     SDL_Quit();
+
+    SDLNW_debug_report_leaks();
 
     return 0;
 }

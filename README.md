@@ -177,9 +177,7 @@ In no particular order.
 - [x] Gesture widget
 - [ ] Styling
 - [x] Label widget
-- [x] Paragraph widget
-- [ ] Text Field widget
-- [ ] Text Entry widget
+- [x] Text widget
 - [x] Z stack widget
 - [x] Routing
 - [x] widgets that can rebuild at runtime, composed of other widgets.
@@ -193,7 +191,7 @@ In no particular order.
 - [x] Sized box
 - [x] Center box
 - [ ] Dropdown
-- [ ] Canvas
+- [x] Canvas
 
 ## Misc
 

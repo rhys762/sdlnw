@@ -5,6 +5,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_pixels.h>
 #include <stdbool.h>
+
 /*
     Public declerations for the SDLNW library.
 */
@@ -13,6 +14,7 @@ typedef struct {
     Uint8 r;
     Uint8 g;
     Uint8 b;
+    Uint8 a;
 } SDLNW_Colour;
 
 struct struct_SDLNW_Widget;
@@ -54,12 +56,15 @@ enum SDLNW_SizingDimension {
 enum SDLNW_EventType {
     SDLNW_EventType_Click,
     SDLNW_EventType_MouseScroll,
-    SDLNW_EventType_MouseDrag, // Combine with below?
-    SDLNW_EventType_MouseMove
+    SDLNW_EventType_MouseDrag,
+    SDLNW_EventType_MouseMove,
+    SDLNW_EventType_KeyUp,
+    SDLNW_EventType_TextInput
 };
 
 typedef struct {
     int x, y;
+    Uint8 clicks;
 } SDLNW_Event_Click;
 
 typedef struct {
@@ -80,6 +85,14 @@ typedef struct {
 } SDLNW_Event_MouseMove;
 
 typedef struct {
+    SDL_Keycode key;
+} SDLNW_Event_KeyUp;
+
+typedef struct {
+    const char* text;
+} SDLNW_Event_TextInput;
+
+typedef struct {
     void (*draw)(SDLNW_Widget* w, SDL_Renderer* renderer);
     void (*size)(SDLNW_Widget* w, const SDL_Rect* rect);
     SDL_SystemCursor (*appropriate_cursor)(SDLNW_Widget* w, int x, int y);
@@ -89,17 +102,36 @@ typedef struct {
 
     // user event handling
     void (*trickle_down_event)(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, bool* allow_passthrough);
+
+    // a click has occurred on the app, may not be this widget
     void (*click)(SDLNW_Widget* w, SDLNW_Event_Click* event, bool* allow_passthrough);
     void (*mouse_scroll)(SDLNW_Widget* widget, SDLNW_Event_MouseWheel* event, bool* allow_passthrough);
     void (*drag)(SDLNW_Widget* widget, SDLNW_Event_Drag* event, bool* allow_passthrough);
     void (*on_hover_on)(SDLNW_Widget* widget, SDLNW_Event_MouseMove* event, bool* allow_passthrough);
     void (*on_hover_off)(SDLNW_Widget* widget, SDLNW_Event_MouseMove* event, bool* allow_passthrough);
+    void (*on_key_up)(SDLNW_Widget* widget, SDLNW_Event_KeyUp* event, bool* allow_passthrough);
+    void (*on_text_input)(SDLNW_Widget* widget, SDLNW_Event_TextInput* event, bool* allow_passthrough);
 } SDLNW_Widget_VTable;
+
+struct __SDLNW_TextControllerChangeListener;
+typedef struct __SDLNW_TextControllerChangeListener SDLNW_TextControllerChangeListener;
+
+SDLNW_TextControllerChangeListener* SDLNW_CreateTextControllerChangeListener(void* data, void (*callback) (void*,char*), void (*free_data)(void*));
+
+typedef struct {
+    char* text;
+    size_t text_len; // includes null char
+    size_t text_capacity;
+
+    SDLNW_TextControllerChangeListener** listeners;
+    size_t listeners_len;
+    size_t listeners_capacity;
+} SDLNW_TextController;
 
 // cleaner v-table calls
 void SDLNW_Widget_Draw(SDLNW_Widget* w, SDL_Renderer* renderer);
 void SDLNW_Widget_Size(SDLNW_Widget* w, const SDL_Rect* rect);
-void SDLNW_Widget_Click(SDLNW_Widget* w, int x, int y);
+void SDLNW_Widget_Click(SDLNW_Widget* w, int x, int y, Uint8 clicks);
 void SDLNW_Widget_Drag(SDLNW_Widget* w, int mouse_x_start, int mouse_y_start, int mouse_x, int mouse_y, bool still_down);
 SDL_SystemCursor SDLNW_Widget_GetAppropriateCursor(SDLNW_Widget* w, int x, int y);
 SDLNW_SizeResponse SDLNW_Widget_GetRequestedSize(SDLNW_Widget* w, SDLNW_SizeRequest request);
@@ -138,10 +170,26 @@ struct struct_SDLNW_Widget {
 
 typedef struct {
     TTF_Font* font;
+    int line_height;
 } SDLNW_Font;
 
 SDLNW_Font* SDLNW_Font_Create(const char* path, int ptsize);
 void SDLNW_Font_Destroy(SDLNW_Font* font);
+
+/*
+    Text controller manipulation
+*/
+
+void SDLNW_TextController_init(SDLNW_TextController* tc);
+void SDLNW_TextController_destroy(SDLNW_TextController* tc);
+
+void SDLNW_TextController_insert(SDLNW_TextController* tc, char c, size_t idx);
+void SDLNW_TextController_remove(SDLNW_TextController* tc, size_t idx);
+void SDLNW_TextController_add_change_listener(SDLNW_TextController* tc, SDLNW_TextControllerChangeListener* tccl);
+// returns true if successfull, false if not present
+bool SDLNW_TextController_remove_change_listener(SDLNW_TextController* tc, SDLNW_TextControllerChangeListener* tccl);
+void SDLNW_TextController_set_value(SDLNW_TextController* tc, const char* text);
+char* SDLNW_TextController_get_value(const SDLNW_TextController* tc);
 
 /*
     Widget creators
@@ -163,8 +211,6 @@ SDLNW_Widget* SDLNW_CreateRouterWidget(void* data, SDLNW_Widget* create_home_wid
 SDLNW_Widget* SDLNW_CreateScrollWidget(SDLNW_Widget* child);
 // a label is intended for a single line of centered text.
 SDLNW_Widget* SDLNW_CreateLabelWidget(const char* text, SDLNW_Font* font);
-// paragraph is for longer sections of text
-SDLNW_Widget* SDLNW_CreateParagraphWidget(const char* text, SDLNW_Font* font);
 // forcefully sizes its child
 typedef struct {
     int width_pixels;
@@ -183,12 +229,34 @@ typedef struct {
     void(*on_click)(void* data, int x, int y, bool* allow_passthrough);
     void(*on_mouse_hover_on)(void* data, bool* allow_passthrough);
     void(*on_mouse_hover_off)(void* data, bool* allow_passthrough);
+    void(*on_key_up)(void* data, SDL_Keycode c, bool* allow_passthrough);
 } SDLNW_GestureDetectorWidget_Options;
 SDLNW_Widget* SDLNW_CreateGestureDetectorWidget(SDLNW_Widget* child, SDLNW_GestureDetectorWidget_Options options);
 // centres a smaller widget within itself
 SDLNW_Widget* SDLNW_CreateCentreWidget(SDLNW_Widget* child);
 // draws arbritrary contents
 SDLNW_Widget* SDLNW_CreateCanvasWidget(void* data, void(*cb)(void* data, const SDL_Rect* size, SDL_Renderer* renderer));
+// a text widget, holds static or editable text
+typedef struct {
+    // controller for the text, MANDATORY
+    // does NOT take ownership
+    SDLNW_TextController* text_controller;
+
+    // the user can highlight text, to copy from
+    bool selectable;
+    // if true, user can click on an edit text. Requires selectable
+    bool editable;
+    // allow newlines when editing
+    bool allow_newlines;
+
+    SDLNW_Font* font;
+    // color to render font in
+    SDLNW_Colour fg;
+    // color to highlight selection
+    SDLNW_Colour highlight;
+} SDLNW_TextWidgetOptions;
+SDLNW_Widget* SDLNW_CreateTextWidget(SDLNW_TextWidgetOptions options);
+
 
 // all optional and will be overriden by 'sensible' defaults if 0.
 typedef struct {
@@ -208,5 +276,6 @@ typedef struct {
 */
 
 void SDLNW_bootstrap(SDLNW_Widget* widget, SDLNW_BootstrapOptions options);
+void SDLNW_debug_report_leaks(void);
 
 #endif

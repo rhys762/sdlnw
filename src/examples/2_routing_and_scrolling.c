@@ -11,8 +11,6 @@ Also demonstrates hover for gesture widgets, used to alter button colour on hove
 
 SDLNW_Font *font = NULL;
 
-const char * text = "This is a paragraph widget inside a scroll widget, it should scroll if the window cannot display the whole text at once. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
-
 SDLNW_Widget* router = NULL;
 
 const char* paragraph_path = "paragraph";
@@ -78,7 +76,8 @@ SDLNW_Widget* create_button_builder(SDLNW_Widget* parent, void* data) {
         c = (SDLNW_Colour){
             .r = increment_without_overflow(c.r, 30),
             .g = increment_without_overflow(c.g, 30),
-            .b = increment_without_overflow(c.b, 30)
+            .b = increment_without_overflow(c.b, 30),
+            .a = c.a
         };
     }
 
@@ -138,26 +137,35 @@ SDLNW_Widget* create_home_widget(void * data, const char * path) {
     (void)data; // unused
     (void)path; // unused
 
-    SDLNW_Colour red = (SDLNW_Colour) {.r=0xFF};
+    SDLNW_Colour red = (SDLNW_Colour) {.r=0xFF, .a=0XFF};
     return create_button("Show some text", red, home_button_cb);
 }
 
 // a paragraph of text, and a button.
 // both overlaid on a red background
 SDLNW_Widget* create_paragraph(void * data, const char * path) {
-    (void)data; // unused
     (void)path; // unused
+    SDLNW_TextController* tc = data;
 
-    SDLNW_Colour blue = {.b = 0xFF};
+    SDLNW_Colour blue = {.b = 0xFF, .a=0XFF};
+
+    SDLNW_Widget* text = SDLNW_CreateTextWidget((SDLNW_TextWidgetOptions) {
+        .allow_newlines = true,
+        .fg = (SDLNW_Colour) {0x00, 0x00, 0x00, 0xFF},
+        .highlight = (SDLNW_Colour) {0x00, 0x00, 0x00, 0x99},
+        .font = font,
+        .selectable = true,
+        .text_controller = tc
+    });
 
     SDLNW_Widget* column_widgets[] = {
-        SDLNW_CreateParagraphWidget(text, font),
+        text,
         create_button("Click to go Back", blue, route_back),
         NULL
     };
 
     SDLNW_Widget* zstack_widgets[] = {
-        SDLNW_CreateSurfaceWidget((SDLNW_Colour) {0xFF, 0x00, 0x00}),
+        SDLNW_CreateSurfaceWidget((SDLNW_Colour) {0xFF, 0x00, 0x00, 0xFF}),
         SDLNW_CreateColumnWidget(column_widgets),
         NULL
     };
@@ -177,12 +185,16 @@ int main(int argc, char** argv) {
     SDL_Init(SDL_INIT_EVERYTHING);
     TTF_Init();
 
+    SDLNW_TextController tc;
+    SDLNW_TextController_init(&tc);
+    SDLNW_TextController_set_value(&tc, "This is a paragraph widget inside a scroll widget, it should scroll if the window cannot display the whole text at once. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.");
+
     font = SDLNW_Font_Create(fontpath, 32);
     assert(font != NULL);
 
     // setup router
     router = SDLNW_CreateRouterWidget(NULL, create_home_widget);
-    SDLNW_Widget_RouterAddRoute(router, paragraph_path, NULL, create_paragraph);
+    SDLNW_Widget_RouterAddRoute(router, paragraph_path, &tc, create_paragraph);
 
     // defer event handling to bootstrap
     const SDLNW_BootstrapOptions options = (SDLNW_BootstrapOptions){.sdl_window_flags = SDL_WINDOW_RESIZABLE};
@@ -196,6 +208,10 @@ int main(int argc, char** argv) {
     SDLNW_Widget_Destroy(router);
     SDLNW_Font_Destroy(font);
 
+    SDLNW_TextController_destroy(&tc);
+
     TTF_Quit();
     SDL_Quit();
+
+    SDLNW_debug_report_leaks();
 }

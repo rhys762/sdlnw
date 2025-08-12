@@ -17,7 +17,7 @@ static void base_click(SDLNW_Widget* w, SDLNW_Event_Click* event, bool* allow_pa
 }
 
 static void base_destroy(SDLNW_Widget* w) {
-    free(w->data);
+    __sdlnw_free(w->data);
     w->data = NULL;
 }
 
@@ -68,6 +68,18 @@ static void base_on_hover_off(SDLNW_Widget* widget, SDLNW_Event_MouseMove* event
     (void)allow_passthrough;
 }
 
+static void base_on_key_up(SDLNW_Widget* widget, SDLNW_Event_KeyUp* event, bool* allow_passthrough) {
+    (void)widget;
+    (void)event;
+    (void)allow_passthrough;
+}
+
+static void base_on_text_input(SDLNW_Widget* widget, SDLNW_Event_TextInput* event, bool* allow_passthrough) {
+    (void)widget;
+    (void)event;
+    (void)allow_passthrough;
+}
+
 static void init_default_vtable(SDLNW_Widget_VTable* table) {
     table->draw = base_draw;
     table->size = base_size;
@@ -80,11 +92,13 @@ static void init_default_vtable(SDLNW_Widget_VTable* table) {
     table->drag = base_drag;
     table->on_hover_on = base_on_hover_on;
     table->on_hover_off = base_on_hover_off;
+    table->on_key_up = base_on_key_up;
+    table->on_text_input = base_on_text_input;
 }
 
 // init default widget
 SDLNW_Widget* create_default_widget(void) {
-    SDLNW_Widget* p = malloc(sizeof(SDLNW_Widget));
+    SDLNW_Widget* p = __sdlnw_malloc(sizeof(SDLNW_Widget));
     
     *p = (SDLNW_Widget){0};
 
@@ -113,11 +127,75 @@ void _sdlnw_copy_null_terminated(SDLNW_Widget** src_null_terminted, SDLNW_Widget
         return;
     }
 
-    SDLNW_Widget** p = malloc(len * sizeof(SDLNW_Widget*));
+    SDLNW_Widget** p = __sdlnw_malloc(len * sizeof(SDLNW_Widget*));
     for (size_t i = 0; i < len; i++) {
         p[i] = src_null_terminted[i];
     }
 
     *target = p;
     *target_length = len;
+}
+
+typedef struct MemEntry {
+    void *ptr;
+    size_t size;
+    const char *file;
+    int line;
+    struct MemEntry *next;
+} MemEntry;
+static MemEntry *mem_list = NULL;
+
+static void add_entry(void *ptr, size_t size, const char *file, int line) {
+    MemEntry *entry = malloc(sizeof(MemEntry));
+    entry->ptr = ptr;
+    entry->size = size;
+    entry->file = file;
+    entry->line = line;
+    entry->next = mem_list;
+    mem_list = entry;
+}
+
+static void remove_entry(void *ptr) {
+    MemEntry **curr = &mem_list;
+    while (*curr) {
+        if ((*curr)->ptr == ptr) {
+            MemEntry *to_free = *curr;
+            *curr = (*curr)->next;
+            free(to_free);
+            return;
+        }
+        curr = &((*curr)->next);
+    }
+}
+
+void* __sdlnw_debug_malloc(size_t size, const char *file, int line) {
+    void *ptr = malloc(size);
+    if (ptr) add_entry(ptr, size, file, line);
+    return ptr;
+}
+
+void* __sdlnw_debug_realloc(void *ptr, size_t size, const char *file, int line) {
+    void* new_ptr = realloc(ptr, size);
+    if (new_ptr) {
+        #pragma GCC diagnostic push
+        #pragma GCC diagnostic ignored "-Wuse-after-free"
+        remove_entry(ptr);
+        #pragma GCC diagnostic pop
+        add_entry(new_ptr, size, file, line);
+    }
+    return new_ptr;
+}
+
+void __sdlnw_debug_free(void *ptr) {
+    remove_entry(ptr);
+    free(ptr);
+}
+
+void SDLNW_debug_report_leaks(void) {
+    MemEntry *curr = mem_list;
+    while (curr) {
+        printf("Memory leak: %p of %zu bytes allocated at %s:%d\n",
+               curr->ptr, curr->size, curr->file, curr->line);
+        curr = curr->next;
+    }
 }

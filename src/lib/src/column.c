@@ -99,12 +99,16 @@ static SDLNW_SizeResponse column_get_requested_size(SDLNW_Widget* w, SDLNW_SizeR
 static void column_destroy(SDLNW_Widget* w) {
     struct column_data* data = w->data;
 
-    free(data->list);
+    for (size_t i = 0; i < data->list_len; i++) {
+        SDLNW_Widget_Destroy(data->list[i]);
+    }
+
+    __sdlnw_free(data->list);
     data->list = NULL;
 
     data->list_len = 0;
 
-    free(data);
+    __sdlnw_free(data);
     w->data = NULL;
 }
 
@@ -126,7 +130,7 @@ SDLNW_Widget* SDLNW_CreateColumnWidget(SDLNW_Widget** null_terminated_array) {
     widget->vtable.get_requested_size = column_get_requested_size;
     widget->vtable.trickle_down_event = column_trickle_down_event;
 
-    widget->data = malloc(sizeof(struct column_data));
+    widget->data = __sdlnw_malloc(sizeof(struct column_data));
     struct column_data* data = widget->data;
     *data = (struct column_data){0};
     _sdlnw_copy_null_terminated(null_terminated_array, &data->list, &data->list_len);

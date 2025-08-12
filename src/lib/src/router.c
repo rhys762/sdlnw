@@ -51,7 +51,7 @@ void SDLNW_Widget_RouterPush(SDLNW_Widget* w, const char* path) {
 
     if (data->stack_cap == data->stack_len) {
         data->stack_cap *= 2;
-        data->stack = realloc(data->stack, data->stack_cap * sizeof(char*));
+        data->stack = __sdlnw_realloc(data->stack, data->stack_cap * sizeof(char*));
         assert(data->stack != NULL);
     }
 
@@ -62,7 +62,7 @@ void SDLNW_Widget_RouterPush(SDLNW_Widget* w, const char* path) {
 
     if (data->stack_len == data->stack_cap) {
         data->stack_cap *= 2;
-        data->stack = realloc(data->stack, data->stack_cap);
+        data->stack = __sdlnw_realloc(data->stack, data->stack_cap);
         assert(data->stack != NULL);
     }
 
@@ -114,7 +114,7 @@ void SDLNW_Widget_RouterAddRoute(SDLNW_Widget* w, const char* path, void* d, SDL
 
     if (data->routes_len == data->routes_cap) {
         data->routes_cap *= 2;
-        data->routes = realloc(data->routes, data->routes_cap * sizeof(struct route));
+        data->routes = __sdlnw_realloc(data->routes, data->routes_cap * sizeof(struct route));
         assert(data->routes != NULL);
     }
 
@@ -149,16 +149,16 @@ static void router_destroy(SDLNW_Widget* w) {
 
     resolve_buffer(data);
 
-    free(data->routes);
+    __sdlnw_free(data->routes);
 
     for (uint i = 0; i < data->stack_len; i++) {
         SDLNW_Widget_Destroy(data->stack[i]);
         data->stack[i] = NULL;
     }
 
-    free(data->stack);
+    __sdlnw_free(data->stack);
 
-    free(data);
+    __sdlnw_free(data);
     w->data = NULL;
 }
 
@@ -184,16 +184,16 @@ SDLNW_Widget* SDLNW_CreateRouterWidget(void* data, SDLNW_Widget* create_home_wid
     widget->vtable.get_requested_size = router_get_requested_size;
     widget->vtable.trickle_down_event = router_trickle_down_event;
 
-    widget->data = malloc(sizeof(struct router_data));
+    widget->data = __sdlnw_malloc(sizeof(struct router_data));
     struct router_data* d = widget->data;
     *d = (struct router_data){0};
 
     d->routes_cap = 2;
-    d->routes = malloc(d->routes_cap * sizeof(struct route));
+    d->routes = __sdlnw_malloc(d->routes_cap * sizeof(struct route));
     assert(d->routes != NULL);
 
     d->stack_cap = 2;
-    d->stack = malloc(d->stack_cap * sizeof(char*));
+    d->stack = __sdlnw_malloc(d->stack_cap * sizeof(char*));
     assert(d->stack != NULL);
 
     SDLNW_Widget_RouterAddRoute(widget, "", data, create_home_widget);

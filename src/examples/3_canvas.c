@@ -15,7 +15,7 @@ void draw_square_at(SDL_Renderer* renderer, int x, int y) {
     int width = 30;
     int half_width = width / 2;
 
-    SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0x00);
+    SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
     SDL_Rect square = {x - half_width, y - half_width, width, width};
     SDL_RenderFillRect(renderer, &square);
 }
@@ -43,7 +43,7 @@ void canvas_draw(void* data, const SDL_Rect* size, SDL_Renderer* renderer) {
 
 SDLNW_Widget* create_app(void) {
     SDLNW_Widget* widgets[] = {
-        SDLNW_CreateSurfaceWidget((SDLNW_Colour){.b = 0xFF}),
+        SDLNW_CreateSurfaceWidget((SDLNW_Colour){.b = 0xFF, .a=0xFF}),
         SDLNW_CreateCentreWidget(
         SDLNW_CreateSizedBoxWidget(
             SDLNW_CreateCanvasWidget(NULL, canvas_draw), (SDLNW_SizedBoxWidget_Options){.width_pixels = 200, .height_pixels = 200})
@@ -71,6 +71,8 @@ int main(void) {
 
     TTF_Quit();
     SDL_Quit();
+
+    SDLNW_debug_report_leaks();
 
     return 0;
 }
