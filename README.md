@@ -1,5 +1,5 @@
 
-> [!WARNING]  
+> [!WARNING]
 > This library is in early development and is both unstable and incomplete.
 
 # About
@@ -10,7 +10,7 @@ SDL Nested Widgets is intended to be a small library for managing simple ui elem
 
 - SDL2, SDL2_ttf development libraries.
 - meson (and toolchain, see https://mesonbuild.com/Quick-guide.html)
-- typical linux tools, including but not limited to: wget, unzip
+- typical linux tools, including but not limited to: make, wget, unzip, a c compiler
 
 # Building
 
@@ -23,24 +23,31 @@ Download Jet Brains Mono:
 ls jbm/fonts/ttf/JetBrainsMono-Regular.ttf # success
 ```
 
-Create the build directory and build:
+Create the build directory:
 
 ```bash
-meson setup build
-cd build
-ninja
+make setup
 ```
 
-## Following builds
+## Compiling
 
 ```bash
-cd build
-ninja
+make build
 ```
 
 # Tests and Examples
 
-Tests are still todo.
+Tests are still todo. What little exist can be run with:
+
+```bash
+make test
+```
+
+Test coverage can be produced with
+```bash
+make coverage
+```
+For accurate results you'll likely want to remove all the .gcno files first, TODO should be part of the target.
 
 Example code is in `src/examples` and are built in `build`. Run with:
 
@@ -68,7 +75,7 @@ SDLNW_Widget* scroll = SDLNW_CreateScrollWidget(p);
 
 // run app
 const SDLNW_BootstrapOptions options = (SDLNW_BootstrapOptions){0};
-SDLNW_bootstrap(button, options);    
+SDLNW_bootstrap(button, options);
 
 // finished running
 // scroll has ownership of p, only need to destroy scroll
@@ -171,7 +178,7 @@ Which should produce `subprojects/sdlnw/build/libSDLNW.a`, which you can then li
 In no particular order.
 
 - [x] Placeholder widget
-- [ ] Row widget
+- [x] Row widget
 - [x] Column widget
 - [x] Surface widget
 - [x] Gesture widget
@@ -199,6 +206,4 @@ In no particular order.
 - Const correctness
 - Font render caching
 - The composite recompose should assert that its actually got a composite widget, instead of being UB
-- Text selection
-- Clipboard
 - how much of sdlnw.h can be moved to internal helpers

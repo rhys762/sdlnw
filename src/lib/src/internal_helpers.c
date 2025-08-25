@@ -1,13 +1,15 @@
 #include "../include/internal_helpers.h"
 #include "../include/SDLNW.h"
 
-static void base_draw(SDLNW_Widget* w, SDL_Renderer* renderer) {
-    (void)w; // unused
+static void base_draw_content(void* data, const SDL_Rect* content_size, SDL_Renderer* renderer) {
+    (void)data; // unused
+    (void)content_size;
     (void)renderer; // unused
 }
 
-static void base_size(SDLNW_Widget* w, const SDL_Rect* rect) {
-    w->size = *rect;
+static void base_set_content_size(void* data, const SDL_Rect* rect) {
+    (void)data;
+    (void)rect;
 }
 
 static void base_click(SDLNW_Widget* w, SDLNW_Event_Click* event, bool* allow_passthrough) {
@@ -44,7 +46,7 @@ static void base_trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType t
     (void)allow_passthrough; // unused
 }
 
-static void base_mouse_scroll(SDLNW_Widget* widget, SDLNW_Event_MouseWheel* event, bool* allow_passthrough) {   
+static void base_mouse_scroll(SDLNW_Widget* widget, SDLNW_Event_MouseWheel* event, bool* allow_passthrough) {
     (void)widget; // unused
     (void)event; // unused
     (void)allow_passthrough; // unused
@@ -81,8 +83,8 @@ static void base_on_text_input(SDLNW_Widget* widget, SDLNW_Event_TextInput* even
 }
 
 static void init_default_vtable(SDLNW_Widget_VTable* table) {
-    table->draw = base_draw;
-    table->size = base_size;
+    table->draw_content = base_draw_content;
+    table->set_content_size = base_set_content_size;
     table->click = base_click;
     table->destroy = base_destroy;
     table->appropriate_cursor = base_appropriate_cursor;
@@ -99,7 +101,7 @@ static void init_default_vtable(SDLNW_Widget_VTable* table) {
 // init default widget
 SDLNW_Widget* create_default_widget(void) {
     SDLNW_Widget* p = __sdlnw_malloc(sizeof(SDLNW_Widget));
-    
+
     *p = (SDLNW_Widget){0};
 
     init_default_vtable(&p->vtable);
@@ -198,4 +200,26 @@ void SDLNW_debug_report_leaks(void) {
                curr->ptr, curr->size, curr->file, curr->line);
         curr = curr->next;
     }
+}
+
+SDL_Rect __sdlnw_add_inset(const SDL_Rect* rect, const SDLNW_Insets* inset) {
+    SDL_Rect out = {0};
+
+    out.x = rect->x - inset->left;
+    out.y = rect->y - inset->top;
+    out.w = rect->w + inset->left + inset->right;
+    out.h = rect->h + inset->top + inset->bottom;
+
+    return out;
+}
+
+SDL_Rect __sdlnw_sub_inset(const SDL_Rect* rect, const SDLNW_Insets* inset) {
+    SDL_Rect out = {0};
+
+    out.x = rect->x + inset->left;
+    out.y = rect->y + inset->top;
+    out.w = rect->w - (inset->left + inset->right);
+    out.h = rect->h - (inset->top + inset->bottom);
+
+    return out;
 }

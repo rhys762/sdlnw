@@ -6,18 +6,18 @@ struct column_data {
     size_t list_len;
 };
 
-static void column_draw(SDLNW_Widget* w, SDL_Renderer* renderer) {
-    struct column_data* data = w->data;
+static void column_draw_content(void* data, const SDL_Rect* content_size, SDL_Renderer* renderer) {
+    (void)content_size;
 
-    for (size_t i = 0; i < data->list_len; i++) {
-        SDLNW_Widget_Draw(data->list[i], renderer);
+    struct column_data* d = data;
+
+    for (size_t i = 0; i < d->list_len; i++) {
+        SDLNW_Widget_Draw(d->list[i], renderer);
     }
 }
 
-static void column_size(SDLNW_Widget* w, const SDL_Rect* rect) {
-    struct column_data* data = w->data;
-
-    w->size = *rect;
+static void column_set_content_size(void* d, const SDL_Rect* rect) {
+    struct column_data* data = d;
 
     // find out how much space we have to work with
 
@@ -47,7 +47,7 @@ static void column_size(SDLNW_Widget* w, const SDL_Rect* rect) {
         int pixels = r.height.pixels + r.height.shares * height_per_share;
 
         sz.h = pixels;
-        SDLNW_Widget_Size(data->list[i], &sz);
+        SDLNW_Widget_SetNetSize(data->list[i], &sz);
         sz.y += pixels;
     }
 }
@@ -62,7 +62,7 @@ static SDL_SystemCursor column_appropriate_cursor(SDLNW_Widget* w, int x, int y)
 
     for (size_t i = 0; i < data->list_len; i++) {
         SDLNW_Widget* w = data->list[i];
-        if (is_point_within_rect(x, y, &w->size)) {
+        if (is_point_within_rect(x, y, &w->net_size)) {
             cursor = max_cursor(cursor, SDLNW_Widget_GetAppropriateCursor(w, x, y));
         }
     }
@@ -123,8 +123,8 @@ static void column_trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType
 SDLNW_Widget* SDLNW_CreateColumnWidget(SDLNW_Widget** null_terminated_array) {
     SDLNW_Widget* widget = create_default_widget();
 
-    widget->vtable.draw = column_draw;
-    widget->vtable.size = column_size;
+    widget->vtable.draw_content = column_draw_content;
+    widget->vtable.set_content_size = column_set_content_size;
     widget->vtable.appropriate_cursor = column_appropriate_cursor;
     widget->vtable.destroy = column_destroy;
     widget->vtable.get_requested_size = column_get_requested_size;

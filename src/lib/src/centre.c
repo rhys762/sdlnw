@@ -6,18 +6,18 @@
 */
 
 struct centre_data {
-    SDLNW_Widget* child;  
+    SDLNW_Widget* child;
 };
 
-static void centre_draw(SDLNW_Widget* w, SDL_Renderer* renderer) {
-    struct centre_data* data = w->data;
+static void centre_draw_content(void* d, const SDL_Rect* content_size, SDL_Renderer* renderer) {
+    (void)content_size;
+    struct centre_data* data = d;
     SDLNW_Widget_Draw(data->child, renderer);
 }
 
-static void centre_size(SDLNW_Widget* w, const SDL_Rect* rect) {
-    struct centre_data* data = w->data;
+static void centre_set_content_size(void* d, const SDL_Rect* rect) {
+    struct centre_data* data = d;
 
-    w->size = *rect;
     SDLNW_SizeResponse sz_res = SDLNW_Widget_GetRequestedSize(data->child, (SDLNW_SizeRequest){.total_pixels_avaliable_width = rect->w, .total_pixels_avaliable_height = rect->h});
 
     const int requested_height = sz_res.height.pixels;
@@ -34,7 +34,7 @@ static void centre_size(SDLNW_Widget* w, const SDL_Rect* rect) {
         .w = requested_width
     };
 
-    SDLNW_Widget_Size(data->child, &child_sz);
+    SDLNW_Widget_SetNetSize(data->child, &child_sz);
 }
 
 static SDL_SystemCursor centre_appropriate_cursor(SDLNW_Widget* w, int x, int y) {
@@ -66,8 +66,8 @@ static void centre_trickle_down_event(SDLNW_Widget* w, enum SDLNW_EventType type
 SDLNW_Widget* SDLNW_CreateCentreWidget(SDLNW_Widget* child) {
     SDLNW_Widget* widget = create_default_widget();
 
-    widget->vtable.draw = centre_draw;
-    widget->vtable.size = centre_size;
+    widget->vtable.draw_content = centre_draw_content;
+    widget->vtable.set_content_size = centre_set_content_size;
     widget->vtable.appropriate_cursor = centre_appropriate_cursor;
     widget->vtable.destroy = centre_destroy;
     widget->vtable.get_requested_size = centre_get_requested_size;

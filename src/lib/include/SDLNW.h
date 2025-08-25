@@ -6,16 +6,25 @@
 #include <SDL2/SDL_pixels.h>
 #include <stdbool.h>
 
+typedef struct {
+    int top_left;
+    int top_right;
+    int bottom_left;
+    int bottom_right;
+} SDLNW_CornerRadius;
+
+bool SDLNW_CornerRadius_comp(const SDLNW_CornerRadius* a, const SDLNW_CornerRadius* b);
+
+typedef struct {
+    int top;
+    int right;
+    int bottom;
+    int left;
+} SDLNW_Insets;
+
 /*
     Public declerations for the SDLNW library.
 */
-
-typedef struct {
-    Uint8 r;
-    Uint8 g;
-    Uint8 b;
-    Uint8 a;
-} SDLNW_Colour;
 
 struct struct_SDLNW_Widget;
 typedef struct struct_SDLNW_Widget SDLNW_Widget;
@@ -34,13 +43,13 @@ typedef struct {
 // indicates how much of avaliable space (above) is required
 typedef struct {
     // non-zero indicates the widget requests a set amount of pixels
-    uint pixels;
+    size_t pixels;
     // non-zero indicates the widget requests as much space as possible.
     // the widget will likely be allocted a weighted portion of space
     // according to requested shares, so if this widget requests 1 share
     // and another widget 2, then this widget will recieve a third of the
     // avaliable space.
-    uint shares;
+    size_t shares;
 } SDLNW_DimensionSizeRequest;
 
 typedef struct {
@@ -93,8 +102,9 @@ typedef struct {
 } SDLNW_Event_TextInput;
 
 typedef struct {
-    void (*draw)(SDLNW_Widget* w, SDL_Renderer* renderer);
-    void (*size)(SDLNW_Widget* w, const SDL_Rect* rect);
+    void (*draw_content)(void* widget_data, const SDL_Rect* content_size, SDL_Renderer* renderer);
+    void (*set_content_size)(void* widget_data, const SDL_Rect* rect);
+
     SDL_SystemCursor (*appropriate_cursor)(SDLNW_Widget* w, int x, int y);
     void (*destroy)(SDLNW_Widget* w);
     // based on the size of a locked dimension, how big do you need for the other dimension?
@@ -113,6 +123,21 @@ typedef struct {
     void (*on_text_input)(SDLNW_Widget* widget, SDLNW_Event_TextInput* event, bool* allow_passthrough);
 } SDLNW_Widget_VTable;
 
+typedef struct {
+    SDL_Texture* cached_texture;
+    int cached_width;
+    int cached_height;
+    SDLNW_CornerRadius cached_radius;
+
+    void* border_data;
+    void (*render)(SDL_Renderer* renderer, const SDL_Rect* widget_size, void* border_data, const SDLNW_CornerRadius* radius);
+    void (*destroy_data)(void* border_data);
+} SDLNW_Border;
+
+void SDLNW_Border_draw(SDLNW_Border* border, SDL_Renderer* renderer, const SDL_Rect* to, const SDLNW_CornerRadius* radius);
+SDLNW_Border* SDLNW_Border_create_solid(int width, SDL_Colour colour);
+void SDLNW_Border_destroy(SDLNW_Border* border);
+
 struct __SDLNW_TextControllerChangeListener;
 typedef struct __SDLNW_TextControllerChangeListener SDLNW_TextControllerChangeListener;
 
@@ -130,7 +155,7 @@ typedef struct {
 
 // cleaner v-table calls
 void SDLNW_Widget_Draw(SDLNW_Widget* w, SDL_Renderer* renderer);
-void SDLNW_Widget_Size(SDLNW_Widget* w, const SDL_Rect* rect);
+void SDLNW_Widget_SetNetSize(SDLNW_Widget* w, const SDL_Rect* rect);
 void SDLNW_Widget_Click(SDLNW_Widget* w, int x, int y, Uint8 clicks);
 void SDLNW_Widget_Drag(SDLNW_Widget* w, int mouse_x_start, int mouse_y_start, int mouse_x, int mouse_y, bool still_down);
 SDL_SystemCursor SDLNW_Widget_GetAppropriateCursor(SDLNW_Widget* w, int x, int y);
@@ -140,6 +165,9 @@ void SDLNW_Widget_TrickleDownEvent(SDLNW_Widget* widget, enum SDLNW_EventType ty
 void SDLNW_Widget_MouseScroll(SDLNW_Widget* w, int x, int y, int delta_x, int delta_y);
 void SDLNW_Widget_MouseMotion(SDLNW_Widget* w, int x, int y, int last_x, int last_y);
 // other helpers
+void SDLNW_Widget_add_border(SDLNW_Widget* w, SDLNW_Border* border); // takes ownership
+void SDLNW_Widget_set_corner_radius(SDLNW_Widget* w, SDLNW_CornerRadius radius); // set radius for background and border
+void SDLNW_Widget_set_padding(SDLNW_Widget* w, SDLNW_Insets insets);
 
 // adds data and callback which will be executed when the widget is destroyed
 // usefull for state cleanup
@@ -154,14 +182,27 @@ void SDLNW_Widget_RouterReplace(SDLNW_Widget* w, const char* path);
 void SDLNW_Widget_RouterBack(SDLNW_Widget* w);
 void SDLNW_Widget_RouterAddRoute(SDLNW_Widget* w, const char* path, void* data, SDLNW_Widget* build_route(void* data, const char* path));
 
+typedef struct __sdlnw_Background_struct SDLNW_Background;
+
+void SDLNW_Background_render(SDLNW_Background* bg, SDL_Renderer* renderer, const SDL_Rect* widget_net_size, const SDLNW_CornerRadius* radius);
+void SDLNW_Background_destroy(SDLNW_Background* bg);
+
+SDLNW_Background* SDLNW_CreateSolidBackground(SDL_Colour);
+
 // TODO Can this be moved to an internal .h file?
 struct struct_SDLNW_Widget {
     SDLNW_Widget_VTable vtable;
-    SDL_Rect size;
+    SDL_Rect net_size; // content + padding
+    SDL_Rect content_size;
     // specific implementation data
     void* data;
     // on destroy data + callbacks
     void* on_destroy_list;
+
+    SDLNW_Border* border;
+    SDLNW_Insets padding;
+    SDLNW_CornerRadius radius;
+    SDLNW_Background* background;
 };
 
 /*
@@ -197,10 +238,10 @@ char* SDLNW_TextController_get_value(const SDLNW_TextController* tc);
 
 // a black cross on white background
 SDLNW_Widget* SDLNW_CreatePlaceholderWidget(void);
-// a coloured box
-SDLNW_Widget* SDLNW_CreateSurfaceWidget(SDLNW_Colour colour);
 // list is displayed top down
 SDLNW_Widget* SDLNW_CreateColumnWidget(SDLNW_Widget** null_terminated_array);
+// list is displayed left right
+SDLNW_Widget* SDLNW_CreateRowWidget(SDLNW_Widget** null_terminated_array);
 // first on bottom, last on top
 SDLNW_Widget* SDLNW_CreateZStackWidget(SDLNW_Widget** null_terminated_array);
 // a widget composed of other widgets, takes a builder function
@@ -209,8 +250,6 @@ SDLNW_Widget* SDLNW_CreateCompositeWidget(void* data, SDLNW_Widget*(*cb)(SDLNW_W
 SDLNW_Widget* SDLNW_CreateRouterWidget(void* data, SDLNW_Widget* create_home_widget(void* data, const char* path));
 // nests a widget inside a scroll area
 SDLNW_Widget* SDLNW_CreateScrollWidget(SDLNW_Widget* child);
-// a label is intended for a single line of centered text.
-SDLNW_Widget* SDLNW_CreateLabelWidget(const char* text, SDLNW_Font* font);
 // forcefully sizes its child
 typedef struct {
     int width_pixels;
@@ -251,12 +290,11 @@ typedef struct {
 
     SDLNW_Font* font;
     // color to render font in
-    SDLNW_Colour fg;
+    SDL_Colour fg;
     // color to highlight selection
-    SDLNW_Colour highlight;
+    SDL_Colour highlight;
 } SDLNW_TextWidgetOptions;
 SDLNW_Widget* SDLNW_CreateTextWidget(SDLNW_TextWidgetOptions options);
-
 
 // all optional and will be overriden by 'sensible' defaults if 0.
 typedef struct {
@@ -276,6 +314,18 @@ typedef struct {
 */
 
 void SDLNW_bootstrap(SDLNW_Widget* widget, SDLNW_BootstrapOptions options);
+
+struct struct_SDLNW_WidgetWindowSet;
+typedef struct struct_SDLNW_WidgetWindowSet SDLNW_WidgetWindowSet;
+
+SDLNW_WidgetWindowSet* SDLNW_CreateWidgetWindowSet(void);
+void SDLNW_WidgetWindowSet_destroy(SDLNW_WidgetWindowSet* set);
+
+void SDLNW_WidgetWindowSet_CreateWidgetWindow(SDLNW_WidgetWindowSet* set, SDLNW_Widget* widget, SDLNW_BootstrapOptions options);
+void SDLNW_CreateWidgetWindowSet_step(SDLNW_WidgetWindowSet* set);
+size_t SDLNW_CreateWidgetWindowSet_get_number_of_windows(SDLNW_WidgetWindowSet* set);
+
+// debuging mem leaks with the debug build
 void SDLNW_debug_report_leaks(void);
 
 #endif

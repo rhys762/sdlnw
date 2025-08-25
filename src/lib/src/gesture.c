@@ -7,19 +7,20 @@ struct gesture_data {
     SDLNW_GestureDetectorWidget_Options options;
 };
 
-static void gesture_draw(SDLNW_Widget* w, SDL_Renderer* renderer) {
-    struct gesture_data* data = w->data;
+static void gesture_draw_content(void* d, const SDL_Rect* content_size, SDL_Renderer* renderer) {
+    (void)content_size;
+
+    struct gesture_data* data = d;
     SDLNW_Widget_Draw(data->child, renderer);
 }
 
-static void gesture_size(SDLNW_Widget* w, const SDL_Rect* rect) {
-    struct gesture_data* data = w->data;
-    w->size = *rect;
-    SDLNW_Widget_Size(data->child, rect);
+static void gesture_set_content_size(void* d, const SDL_Rect* rect) {
+    struct gesture_data* data = d;
+    SDLNW_Widget_SetNetSize(data->child, rect);
 }
 
 static void gesture_click(SDLNW_Widget* w, SDLNW_Event_Click* event, bool* allow_passthrough) {
-    if (!is_point_within_rect(event->x, event->y, &w->size)) {
+    if (!is_point_within_rect(event->x, event->y, &w->net_size)) {
         return;
     }
 
@@ -64,7 +65,7 @@ static void gesture_trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventTyp
 }
 
 // TODO
-static void gesture_mouse_scroll(SDLNW_Widget* widget, SDLNW_Event_MouseWheel* event, bool* allow_passthrough) {   
+static void gesture_mouse_scroll(SDLNW_Widget* widget, SDLNW_Event_MouseWheel* event, bool* allow_passthrough) {
     (void)widget; // unused
     (void)event; // unused
     (void)allow_passthrough; // unused
@@ -83,7 +84,7 @@ static void gesture_drag(SDLNW_Widget* widget, SDLNW_Event_Drag* event, bool* al
 static void gesture_on_hover_on(SDLNW_Widget* widget, SDLNW_Event_MouseMove* event, bool* allow_passthrough) {
     (void)event; // unused
     struct gesture_data* data = widget->data;
-    
+
     if (data->options.on_mouse_hover_on) {
         data->options.on_mouse_hover_on(data->options.data, allow_passthrough);
     }
@@ -110,8 +111,8 @@ static void gesture_on_key_up(SDLNW_Widget* widget, SDLNW_Event_KeyUp* event, bo
 SDLNW_Widget* SDLNW_CreateGestureDetectorWidget(SDLNW_Widget* child, SDLNW_GestureDetectorWidget_Options options) {
     SDLNW_Widget* widget = create_default_widget();
 
-    widget->vtable.draw = gesture_draw;
-    widget->vtable.size = gesture_size;
+    widget->vtable.draw_content = gesture_draw_content;
+    widget->vtable.set_content_size = gesture_set_content_size;
     widget->vtable.click = gesture_click;
     widget->vtable.destroy = gesture_destroy;
     widget->vtable.appropriate_cursor = gesture_appropriate_cursor;

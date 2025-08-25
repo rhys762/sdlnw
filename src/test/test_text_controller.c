@@ -1,4 +1,5 @@
 #include <munit.h>
+#include <string.h>
 #include "src/lib/include/SDLNW.h"
 
 
@@ -69,7 +70,7 @@ static MunitResult test_SDLNW_TextController_remove(const MunitParameter params[
     SDLNW_TextController_insert(&tc, 'a', 0);
     SDLNW_TextController_insert(&tc, 'b', 1);
     SDLNW_TextController_insert(&tc, 'c', 2);
-    
+
     munit_assert_int(strcmp(tc.text, "abc\0"), ==, 0);
 
     SDLNW_TextController_remove(&tc, 10);
@@ -93,6 +94,11 @@ static MunitResult test_SDLNW_TextController_remove(const MunitParameter params[
     return MUNIT_OK;
 }
 
+static void change_listener(void* data, char* str) {
+    char* buffer = data;
+    strcpy(buffer, str);
+}
+
 static MunitResult test_SDLNW_TextController_add_change_listener(const MunitParameter params[], void *user_data_or_fixture) {
     (void)params;
     (void)user_data_or_fixture;
@@ -102,7 +108,7 @@ static MunitResult test_SDLNW_TextController_add_change_listener(const MunitPara
 
     SDLNW_TextController_init(&tc);
 
-    SDLNW_TextController_add_change_listener(&tc, SDLNW_CreateTextControllerChangeListener(buffer, strcpy, NULL));
+    SDLNW_TextController_add_change_listener(&tc, SDLNW_CreateTextControllerChangeListener(buffer, change_listener, NULL));
 
     // write some characters and remove some characters, check each time buffer is updated
     SDLNW_TextController_insert(&tc, 'a', 0);

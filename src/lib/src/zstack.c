@@ -6,8 +6,9 @@ struct zstack_data {
     size_t list_len;
 };
 
-static void zstack_draw(SDLNW_Widget* w, SDL_Renderer* renderer) {
-    struct zstack_data* data = w->data;
+static void zstack_draw_content(void* d, const SDL_Rect* content_size, SDL_Renderer* renderer) {
+    (void)content_size;
+    struct zstack_data* data = d;
 
     for (size_t i = 0; i < data->list_len; i++) {
         SDLNW_Widget_Draw(data->list[i], renderer);
@@ -15,13 +16,11 @@ static void zstack_draw(SDLNW_Widget* w, SDL_Renderer* renderer) {
 }
 
 // TODO, different sizing strategies.
-static void zstack_size(SDLNW_Widget* w, const SDL_Rect* rect) {
-    struct zstack_data* data = w->data;
-
-    w->size = *rect;
+static void zstack_set_content_size(void* d, const SDL_Rect* rect) {
+    struct zstack_data* data = d;
 
     for (size_t i = 0; i < data->list_len; i++) {
-        SDLNW_Widget_Size(data->list[i], rect);
+        SDLNW_Widget_SetNetSize(data->list[i], rect);
     }
 }
 
@@ -47,7 +46,7 @@ static void zstack_destroy(SDLNW_Widget* w) {
     for (size_t i = 0; i < data->list_len; i++) {
         SDLNW_Widget_Destroy(data->list[i]);
     }
-    
+
     __sdlnw_free(data->list);
     data->list = NULL;
     data->list_len = 0;
@@ -67,7 +66,7 @@ static SDLNW_SizeResponse zstack_get_requested_size(SDLNW_Widget* w, SDLNW_SizeR
     // take max
     for (size_t i = 0; i < data->list_len; i++) {
         SDLNW_SizeResponse res = SDLNW_Widget_GetRequestedSize(data->list[i], request);
-        
+
         response.width.pixels = max(response.width.pixels, res.width.pixels);
         response.width.shares = max(response.width.shares, res.width.shares);
         response.height.pixels = max(response.height.pixels, res.height.pixels);
@@ -99,8 +98,8 @@ static void zstack_trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType
 SDLNW_Widget* SDLNW_CreateZStackWidget(SDLNW_Widget** null_terminated_array) {
     SDLNW_Widget* widget = create_default_widget();
 
-    widget->vtable.draw = zstack_draw;
-    widget->vtable.size = zstack_size;
+    widget->vtable.draw_content = zstack_draw_content;
+    widget->vtable.set_content_size = zstack_set_content_size;
     widget->vtable.appropriate_cursor = zstack_appropriate_cursor;
     widget->vtable.destroy = zstack_destroy;
     widget->vtable.get_requested_size = zstack_get_requested_size;

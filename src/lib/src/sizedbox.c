@@ -1,21 +1,21 @@
 #include "../include/SDLNW.h"
 #include "../include/internal_helpers.h"
+#include <SDL2/SDL_rect.h>
 
 struct sized_box_data {
     SDLNW_Widget* child;
     SDLNW_SizedBoxWidget_Options opts;
 };
 
-static void sizedbox_draw(SDLNW_Widget* w, SDL_Renderer* renderer) {
-    struct sized_box_data* data = w->data;
+static void sizedbox_draw_content(void* d, const SDL_Rect* content_size, SDL_Renderer* renderer) {
+    (void)content_size;
+    struct sized_box_data* data = d;
     SDLNW_Widget_Draw(data->child, renderer);
 }
 
-static void sizedbox_size(SDLNW_Widget* w, const SDL_Rect* rect) {
-    struct sized_box_data* data = w->data;
-    w->size = *rect;
-
-    SDLNW_Widget_Size(data->child, rect);
+static void sizedbox_set_content_size(void* d, const SDL_Rect* rect) {
+    struct sized_box_data* data = d;
+    SDLNW_Widget_SetNetSize(data->child, rect);
 }
 
 SDL_SystemCursor sizedbox_appropriate_cursor(SDLNW_Widget* w, int x, int y) {
@@ -37,7 +37,7 @@ void sizedbox_destroy(SDLNW_Widget* w) {
 
 static SDLNW_SizeResponse sizedbox_get_requested_size(SDLNW_Widget* w, SDLNW_SizeRequest request) {
     (void)request; // unused
-    
+
     struct sized_box_data* data = w->data;
     SDLNW_SizeResponse res = {0};
 
@@ -57,8 +57,8 @@ static void sizedbox_trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventTy
 SDLNW_Widget* SDLNW_CreateSizedBoxWidget(SDLNW_Widget* child, SDLNW_SizedBoxWidget_Options opts) {
     SDLNW_Widget* widget = create_default_widget();
 
-    widget->vtable.draw = sizedbox_draw;
-    widget->vtable.size = sizedbox_size;
+    widget->vtable.draw_content = sizedbox_draw_content;
+    widget->vtable.set_content_size = sizedbox_set_content_size;
     widget->vtable.appropriate_cursor = sizedbox_appropriate_cursor;
     widget->vtable.destroy = sizedbox_destroy;
     widget->vtable.get_requested_size = sizedbox_get_requested_size;

@@ -12,3 +12,5 @@ function do_grep() {
 }
 
 do_grep | grep -v src/lib/include/internal_helpers.h | grep -v src/lib/src/internal_helpers.c
+
+exit 0

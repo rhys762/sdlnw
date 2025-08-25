@@ -7,17 +7,17 @@ struct composite_data {
     SDLNW_Widget*(*cb)(SDLNW_Widget* parent, void*data);
 };
 
-static void composite_draw(SDLNW_Widget* w, SDL_Renderer* renderer) {
-    struct composite_data* data = w->data;
-    SDLNW_Widget_Draw(data->child, renderer);
+static void composite_draw_content(void* data, const SDL_Rect* content_size, SDL_Renderer* renderer) {
+    (void)content_size;
+
+    struct composite_data* d = data;
+    SDLNW_Widget_Draw(d->child, renderer);
 }
 
-static void composite_size(SDLNW_Widget* w, const SDL_Rect* rect) {
-    struct composite_data* data = w->data;
+static void composite_set_content_size(void* data, const SDL_Rect* rect) {
+    struct composite_data* d = data;
 
-    w->size = *rect;
-
-    SDLNW_Widget_Size(data->child, rect);
+    SDLNW_Widget_SetNetSize(d->child, rect);
 }
 
 static SDL_SystemCursor composite_appropriate_cursor(SDLNW_Widget* w, int x, int y) {
@@ -41,9 +41,9 @@ void SDLNW_Widget_Recompose(SDLNW_Widget* w) {
         SDLNW_Widget_Destroy(data->child);
         data->child = NULL;
     }
-    
+
     data->child = data->cb(w, data->data);
-    SDLNW_Widget_Size(data->child, &w->size);
+    SDLNW_Widget_SetNetSize(data->child, &w->content_size);
 }
 
 static SDLNW_SizeResponse composite_get_requested_size(SDLNW_Widget* w, SDLNW_SizeRequest request) {
@@ -61,8 +61,8 @@ static void composite_trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventT
 SDLNW_Widget* SDLNW_CreateCompositeWidget(void* data, SDLNW_Widget*(*cb)(SDLNW_Widget* parent, void*data)) {
     SDLNW_Widget* widget = create_default_widget();
 
-    widget->vtable.draw = composite_draw;
-    widget->vtable.size = composite_size;
+    widget->vtable.draw_content = composite_draw_content;
+    widget->vtable.set_content_size = composite_set_content_size;
     widget->vtable.appropriate_cursor = composite_appropriate_cursor;
     widget->vtable.destroy = composite_destroy;
     widget->vtable.get_requested_size = composite_get_requested_size;

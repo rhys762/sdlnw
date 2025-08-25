@@ -1,6 +1,9 @@
 #include "SDLNW.h"
 #include "internal_helpers.h"
+#include <SDL2/SDL_surface.h>
+#include <SDL2/SDL_ttf.h>
 #include <assert.h>
+#include <stdio.h>
 
 struct text_data {
     SDLNW_TextWidgetOptions options;
@@ -11,25 +14,25 @@ struct text_data {
     size_t cursor;
 
     __sdlnw_RenderedText text;
-    
+
     size_t selection_start, selection_end;
     bool is_dragging;
 };
 
-static void text_draw(SDLNW_Widget* w, SDL_Renderer* renderer) {
-    struct text_data* data = w->data;
+static void text_draw_content(void* d, const SDL_Rect* content_size, SDL_Renderer* renderer) {
+    struct text_data* data = d;
 
-    __sdlnw_RenderedText_render_text(&data->text, renderer);
-    
+    __sdlnw_RenderedText_render_text(&data->text, renderer, content_size->x, content_size->y);
+
     if (data->options.selectable && (data->selection_start || data->selection_end)) {
-        __sdlnw_RenderedText_render_highlight(&data->text, renderer, data->selection_start, data->selection_end, &data->options.highlight);
+        __sdlnw_RenderedText_render_highlight(&data->text, renderer, data->selection_start, data->selection_end, &data->options.highlight, content_size->x, content_size->y);
     }
 
     // render cursor, ocillate every half second
     if (data->selected && data->options.editable) {
         Uint32 tick = SDL_GetTicks() / 500;
         if (tick % 2) {
-            __sdlnw_RenderedText_render_cursor(&data->text, renderer, data->cursor, &(SDLNW_Colour) {0x00, 0x00, 0x00, 0xFF});
+            __sdlnw_RenderedText_render_cursor(&data->text, renderer, data->cursor, &(SDL_Colour) {0x00, 0x00, 0x00, 0xFF}, content_size->x, content_size->y);
         }
     }
 }
@@ -41,13 +44,19 @@ static bool is_whitespace(char c) {
 static void text_click(SDLNW_Widget* w, SDLNW_Event_Click* event, bool* allow_passthrough) {
     struct text_data* data = w->data;
 
-    if (is_point_within_rect(event->x, event->y, &w->size)) {
+    if (!data->options.selectable) {
+        return;
+    }
+
+    if (is_point_within_rect(event->x, event->y, &w->content_size)) {
         *allow_passthrough = false;
         data->selected = true;
+        int xoffset = w->content_size.x;
+        int yoffset = w->content_size.y;
 
         if (event->clicks == 1) {
             // set cursor
-            data->cursor = __sdlnw_RenderedText_convert_point_to_char_index(&data->text, event->x, event->y);\
+            data->cursor = __sdlnw_RenderedText_convert_point_to_char_index(&data->text, event->x - xoffset, event->y - yoffset);
             if (data->cursor == (size_t)-1) {
                 // not found, just put at 0
                 data->cursor = 0;
@@ -60,7 +69,7 @@ static void text_click(SDLNW_Widget* w, SDLNW_Event_Click* event, bool* allow_pa
             // select the word the user clicks on and set cursor to end
             // if user clicks whitespace select the entire whitespace
             // set cursor
-            size_t idx = __sdlnw_RenderedText_convert_point_to_char_index(&data->text, event->x, event->y);
+            size_t idx = __sdlnw_RenderedText_convert_point_to_char_index(&data->text, event->x - xoffset, event->y - yoffset);
             if (idx == (size_t)-1) {
                 // not found, just put at 0
                 data->cursor = 0;
@@ -86,9 +95,6 @@ static void text_click(SDLNW_Widget* w, SDLNW_Event_Click* event, bool* allow_pa
                 data->cursor = data->selection_end;
             }
         }
-
-        
-        
     } else {
         data->selected = false;
         return;
@@ -99,9 +105,12 @@ static void text_drag(SDLNW_Widget* widget, SDLNW_Event_Drag* event, bool* allow
     (void)allow_passthrough; // TODO, unsure how to handle
     struct text_data* data = widget->data;
 
+    int xoffset = widget->content_size.x;
+    int yoffset = widget->content_size.y;
+
     if (!data->is_dragging) {
-        if (is_point_within_rect(event->mouse_x, event->mouse_y, &widget->size)) {
-            size_t idx = __sdlnw_RenderedText_convert_point_to_char_index(&data->text, event->origin_x, event->origin_y);
+        if (is_point_within_rect(event->mouse_x, event->mouse_y, &widget->content_size)) {
+            size_t idx = __sdlnw_RenderedText_convert_point_to_char_index(&data->text, event->origin_x - xoffset, event->origin_y - yoffset);
             if (idx != (size_t)-1) {
                 data->selection_start = idx;
                 data->is_dragging = true;
@@ -109,7 +118,7 @@ static void text_drag(SDLNW_Widget* widget, SDLNW_Event_Drag* event, bool* allow
             }
         }
     } else {
-        size_t idx = __sdlnw_RenderedText_convert_point_to_char_index(&data->text, event->mouse_x, event->mouse_y);
+        size_t idx = __sdlnw_RenderedText_convert_point_to_char_index(&data->text, event->mouse_x - xoffset, event->mouse_y - yoffset);
         if (idx != (size_t)-1) {
             data->selection_end = idx;
         }
@@ -197,7 +206,7 @@ static void text_on_key_up(SDLNW_Widget* w, SDLNW_Event_KeyUp* event, bool* allo
         // not selected, ignore
         return;
     }
-    
+
     SDL_KeyCode c = event->key;
     const char* str = SDLNW_TextController_get_value(data->options.text_controller);
     SDL_Keymod mod_state = SDL_GetModState();
@@ -290,44 +299,97 @@ static SDLNW_SizeResponse text_get_requested_size(SDLNW_Widget* widget, SDLNW_Si
     struct text_data* data = widget->data;
 
     SDLNW_SizeResponse req = (SDLNW_SizeResponse){0};
+    const char* text = SDLNW_TextController_get_value(data->options.text_controller);
 
     if (request.total_pixels_avaliable_width) {
         // create a rendered text to do a live check, don't want our actual one to be modified.
         __sdlnw_RenderedText rt;
         __sdlnw_RenderedText_init(&rt, data->options.font);
-        
-        SDL_Rect dim = {
-            .w = request.total_pixels_avaliable_width
-        };
 
-        __sdlnw_RenderedText_set_text(&rt, SDLNW_TextController_get_value(data->options.text_controller), &dim);
+        __sdlnw_RenderedText_set_text(&rt, text, request.total_pixels_avaliable_width);
 
         if (rt.chars_len > 0) {
             __sdlnw_RenderedChar* c = &rt.chars[rt.chars_len - 1];
+            req.width.pixels = request.total_pixels_avaliable_width;
+
             req.height = (SDLNW_DimensionSizeRequest) {
                 .pixels = c->rendered_to.y + c->rendered_to.h
             };
         }
-        
 
         __sdlnw_RenderedText_destroy(&rt);
+    }
+    else if (request.total_pixels_avaliable_height) {
+        // find the smallest width such that we meet the height requirement
+        __sdlnw_RenderedText rt;
+        __sdlnw_RenderedText_init(&rt, data->options.font);
+
+        SDL_Surface* all_at_once = TTF_RenderText_Solid(data->options.font->font, text, (SDL_Color){
+            .r = data->options.fg.r,
+            .g = data->options.fg.g,
+            .b = data->options.fg.b,
+            .a = data->options.fg.a,
+        });
+
+        int valid_width = all_at_once->w;
+
+        int invalid_width = 1;
+
+        SDL_FreeSurface(all_at_once);
+
+        // how small our search space can get before we decide good enough
+        const int threshold = data->options.font->line_height;
+        const int max_iterations = 1000;
+        int i = 0;
+
+        do {
+            int width = valid_width - ((valid_width - invalid_width) / 2);
+            __sdlnw_RenderedText_set_text(&rt, text, width);
+
+            int height = rt.height;
+
+            // find the furthest right character,
+            // need it to be within bounds which rendered text doesn't guarentee for
+            // really long words
+            int rightmost_point = 0;
+            for (size_t i = 0; i < rt.chars_len; i++) {
+                int j = rt.chars[i].rendered_to.x + rt.chars[i].rendered_to.w;
+                if (j > rightmost_point) {
+                    rightmost_point = j;
+                }
+            }
+
+            if (height > request.total_pixels_avaliable_height || rightmost_point > width) {
+                // too tall
+                invalid_width = width;
+            } else {
+                // OK
+                valid_width = width;
+            }
+        } while ((valid_width - invalid_width) > threshold && i++ < max_iterations);
+
+        req.width.pixels = valid_width;
+        req.height.pixels = request.total_pixels_avaliable_height;
+
+        __sdlnw_RenderedText_destroy(&rt);
+    }
+    else {
+        // no avaliable pixels?
     }
 
     return req;
 }
 
-static void text_size(SDLNW_Widget* w, const SDL_Rect* rect) {
-    struct text_data* data = w->data;
-
-    w->size = *rect;
-    __sdlnw_RenderedText_set_text(&data->text, SDLNW_TextController_get_value(data->options.text_controller), &w->size);
+static void text_set_content_size(void* d, const SDL_Rect* rect) {
+    struct text_data* data = d;
+    __sdlnw_RenderedText_set_text(&data->text, SDLNW_TextController_get_value(data->options.text_controller), rect->w);
 }
 
 static void text_destroy(SDLNW_Widget* w) {
     struct text_data* data = w->data;
 
     __sdlnw_RenderedText_destroy(&data->text);
-    
+
     // if we dont remove listener, the text controller probably got destroyed which
     // destroys the text listener.
     if (SDLNW_TextController_remove_change_listener(data->options.text_controller, data->tccl)) {
@@ -344,7 +406,7 @@ static void listener(void* d, char* text) {
     SDLNW_Widget* widget = d;
     struct text_data* data = widget->data;
 
-    __sdlnw_RenderedText_set_text(&data->text, text, &widget->size);
+    __sdlnw_RenderedText_set_text(&data->text, text, widget->content_size.w);
 }
 
 SDLNW_Widget* SDLNW_CreateTextWidget(SDLNW_TextWidgetOptions options) {
@@ -357,12 +419,12 @@ SDLNW_Widget* SDLNW_CreateTextWidget(SDLNW_TextWidgetOptions options) {
     SDLNW_Widget* widget = create_default_widget();
 
     widget->vtable.destroy = text_destroy;
-    widget->vtable.draw = text_draw;
+    widget->vtable.draw_content = text_draw_content;
     widget->vtable.click = text_click;
     widget->vtable.drag = text_drag;
     widget->vtable.on_key_up = text_on_key_up;
     widget->vtable.on_text_input = text_on_text_input;
-    widget->vtable.size = text_size;
+    widget->vtable.set_content_size = text_set_content_size;
     widget->vtable.get_requested_size = text_get_requested_size;
 
     widget->data = __sdlnw_malloc(sizeof(struct text_data));
@@ -377,7 +439,7 @@ SDLNW_Widget* SDLNW_CreateTextWidget(SDLNW_TextWidgetOptions options) {
 
     SDLNW_TextController_add_change_listener(options.text_controller, p->tccl);
 
-    __sdlnw_RenderedText_set_text(&p->text, SDLNW_TextController_get_value(options.text_controller), &widget->size);
+    __sdlnw_RenderedText_set_text(&p->text, SDLNW_TextController_get_value(options.text_controller), widget->content_size.w);
 
     return widget;
 }
