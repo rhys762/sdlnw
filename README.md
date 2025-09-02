@@ -19,7 +19,7 @@ SDL Nested Widgets is intended to be a small library for managing simple ui elem
 Download Jet Brains Mono:
 
 ```bash
-./scripts/get_jbm.bash
+make font
 ls jbm/fonts/ttf/JetBrainsMono-Regular.ttf # success
 ```
 
@@ -47,44 +47,47 @@ Test coverage can be produced with
 ```bash
 make coverage
 ```
-For accurate results you'll likely want to remove all the .gcno files first, TODO should be part of the target.
 
 Example code is in `src/examples` and are built in `build`. Run with:
 
 ```bash
-build/example_2_routing_and_scrolling
+build/example_0_todo
 ```
-
-Or, with valgrind:
-
-```bash
-valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all --gen-suppressions=all --suppressions=./suppress.valgrind build/example_2_routing_and_scrolling &> v.log
-```
-
-Some of the suppression rules may need adjusting, probably need to revisit the wildcards for leaks originating in main.
-
-Examples start with a number that denotes intended reading order, and increase in complexity.
 
 # Resource Allocation
 
-Widget's and WidgetList's take ownership of any child widgets, typically you will only need to destroy the root of your widget hierarchy:
+TODO, fill out this more when the API settles down.
+
+Widget's take ownership of any child widgets, typically you will only need to destroy the root of your widget hierarchy:
 
 ```c
 SDLNW_Widget* p = SDLNW_CreatePlaceholderWidget();
-SDLNW_Widget* scroll = SDLNW_CreateScrollWidget(p);
-
-// run app
-const SDLNW_BootstrapOptions options = (SDLNW_BootstrapOptions){0};
-SDLNW_bootstrap(button, options);
-
-// finished running
-// scroll has ownership of p, only need to destroy scroll
-SDLNW_Widget_Destroy(scroll);
-p = NULL;
-scroll = NULL;
+SDLNW_Widget* scroll = SDLNW_CreateScrollWidget(p); // scroll now owns p
 ```
 
-In contrast, widgets that accept pointers to some kind of state or otherwise do NOT take ownership of that data by default:
+Widget's that accept a null terminated array of child widgets take control of those widgets, but NOT the array itself:
+
+```c
+SDLNW_Widget* widgets[] = {
+    widget_a,
+    widget_b,
+    NULL
+};
+
+SDLNW_Widget* column = SDLNW_CreateColumnWidget(widgets); // column will destroy widget_a and widget_b, but will NOT try to free widgets
+```
+So you need to handle deallocation of heap arrays:
+```c
+SDLNW_Widget** widgets = malloc(sizeof(SDLNW_Widget*) * 10);
+widgets[0] = widget_a;
+widgets[1] = widget_b;
+widgets[2] = NULL;
+
+SDLNW_Widget* column = SDLNW_CreateColumnWidget(widgets); // column takes ownership of widget_a and widget_b, but NOT widgets
+free(widgets);
+```
+
+Widgets that accept pointers to some kind of state or otherwise do NOT take ownership of that data by default:
 
 ```c
 struct some_struct s = {0};
@@ -124,32 +127,16 @@ sdlnw_proj = subproject('sdlnw')
 sdlnw_dep = sdlnw_proj.get_variable('sdlnw_dep')
 
 # your program build step
-executable('my_program', 'main.c', dependencies: [sdl2_dep, ttf_dep, sdlnw_dep])
+executable('my_program', 'main.c', dependencies: [sdl2_dep, ttf_dep, sdlnw_dep]) # TODO add SDLNW deps, we atleast need maths
 ```
 
 A minimal sanity check main.c would be:
 
 ```c
-
-#include "SDLNW.h"
-
-int main(void) {
-    SDL_Init(SDL_INIT_EVERYTHING);
-    TTF_Init();
-
-    SDLNW_Widget* w = SDLNW_CreatePlaceholderWidget();
-
-    SDLNW_bootstrap(w, (SDLNW_BootstrapOptions) {0});
-
-    SDLNW_Widget_Destroy(w);
-
-    TTF_Quit();
-    SDL_Quit();
-}
-
+// TODO
 ```
 
-Once you've built once, your language server will probably be able to find all the declaration's. It worked out of the box for me with vs-code and clangd.
+Once you've built once, your language server will probably be able to find all the declaration's. It worked out of the box for me with clangd.
 
 ## Otherwise
 

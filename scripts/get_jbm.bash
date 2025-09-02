@@ -5,7 +5,7 @@ set -e
 cd $(dirname $0)
 cd ..
 
-if [ -d ./build/jbm/ ]; then
+if [ -d ./jbm/ ]; then
     echo 'already have font'
     exit 0
 fi
