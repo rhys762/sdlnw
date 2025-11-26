@@ -1,10 +1,10 @@
-#include "internal_helpers.h"
+#include "SDLNWInternal.h"
 
 #include <assert.h>
 
 #include "SDLNW.h"
 
-void SDLNW_TextController_init(SDLNW_TextController* tc) {
+void SDLNW_InitTextController(SDLNW_TextController* tc) {
     tc->text_capacity = 20;
     tc->text_len = 1;
     tc->text = __sdlnw_malloc(sizeof(char) * tc->text_capacity);
@@ -15,7 +15,7 @@ void SDLNW_TextController_init(SDLNW_TextController* tc) {
     tc->listeners = __sdlnw_malloc(sizeof(SDLNW_TextControllerChangeListener*) * tc->listeners_capacity);
 }
 
-void SDLNW_TextController_destroy(SDLNW_TextController* tc) {
+void SDLNW_DestroyTextController(SDLNW_TextController* tc) {
     for (size_t i = 0; i < tc->listeners_len; i++) {
         SDLNW_TextControllerChangeListener_Destroy(tc->listeners[i]);
     }
@@ -38,7 +38,7 @@ static void call_listeners(SDLNW_TextController* tc) {
     }
 }
 
-void SDLNW_TextController_insert(SDLNW_TextController* tc, char c, size_t idx) {
+void SDLNW_TextControllerInsert(SDLNW_TextController* tc, char c, size_t idx) {
     if (idx >= tc->text_len) {
         // error
         return;
@@ -61,7 +61,7 @@ void SDLNW_TextController_insert(SDLNW_TextController* tc, char c, size_t idx) {
     call_listeners(tc);
 }
 
-void SDLNW_TextController_remove(SDLNW_TextController* tc, size_t idx) {
+void SDLNW_TextControllerRemove(SDLNW_TextController* tc, size_t idx) {
     if (tc->text_len < 2) {
         return;
     }
@@ -78,7 +78,7 @@ void SDLNW_TextController_remove(SDLNW_TextController* tc, size_t idx) {
     call_listeners(tc);
 }
 
-void SDLNW_TextController_add_change_listener(SDLNW_TextController* tc, SDLNW_TextControllerChangeListener* tccl) {
+void SDLNW_AddTextControllerChangeListener(SDLNW_TextController* tc, SDLNW_TextControllerChangeListener* tccl) {
     if (tc->listeners_len == tc->listeners_capacity) {
         tc->listeners_capacity *= 2;
         tc->listeners = __sdlnw_realloc(tc->listeners, sizeof(SDLNW_TextControllerChangeListener*) * tc->listeners_capacity);
@@ -88,7 +88,7 @@ void SDLNW_TextController_add_change_listener(SDLNW_TextController* tc, SDLNW_Te
     tc->listeners_len += 1;
 }
 
-bool SDLNW_TextController_remove_change_listener(SDLNW_TextController* tc, SDLNW_TextControllerChangeListener* tccl) {
+bool SDLNW_RemoveTextControllerChangeListener(SDLNW_TextController* tc, SDLNW_TextControllerChangeListener* tccl) {
     for (size_t i = 0; i < tc->listeners_len; i++) {
         if (tc->listeners[i] == tccl) {
             tc->listeners_len--;
@@ -103,7 +103,7 @@ bool SDLNW_TextController_remove_change_listener(SDLNW_TextController* tc, SDLNW
     return false;
 }
 
-void SDLNW_TextController_set_value(SDLNW_TextController* tc, const char* text) {
+void SDLNW_SetTextControllerValue(SDLNW_TextController* tc, const char* text) {
     size_t required_len = strlen(text) + 1;
 
     if (tc->text_capacity <= required_len) {
@@ -121,6 +121,6 @@ void SDLNW_TextController_set_value(SDLNW_TextController* tc, const char* text) 
     call_listeners(tc);
 }
 
-char* SDLNW_TextController_get_value(const SDLNW_TextController* tc) {
+char* SDLNW_GetTextControllerValue(const SDLNW_TextController* tc) {
     return tc->text;
 }

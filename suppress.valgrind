@@ -208,7 +208,7 @@
    Memcheck:Addr8
    ...
    obj:/usr/lib/x86_64-linux-gnu/libSDL2-2.0.so.0.18.2
-   fun:SDLNW_bootstrap
+   fun:SDLNW_WidgetWindowOptions
    ...
 }
 {

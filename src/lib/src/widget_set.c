@@ -1,6 +1,6 @@
 #include "SDLNW.h"
 
-#include "internal_helpers.h"
+#include "SDLNWInternal.h"
 
 #include <SDL2/SDL_events.h>
 #include <SDL2/SDL_video.h>
@@ -8,7 +8,7 @@
 
 struct __sdlnw_widget_window {
     SDLNW_Widget* widget;
-    SDLNW_BootstrapOptions options;
+    SDLNW_WidgetWindowOptions options;
 
     SDL_Window* window;
     SDL_Renderer* renderer;
@@ -24,7 +24,7 @@ struct struct_SDLNW_WidgetWindowSet {
 };
 
 static void __sdlnw_widget_window_destroy(struct __sdlnw_widget_window* w) {
-    SDLNW_Widget_Destroy(w->widget);
+    SDLNW_DestroyWidget(w->widget);
     SDL_DestroyWindow(w->window);
     SDL_DestroyRenderer(w->renderer);
     *w = (struct __sdlnw_widget_window) {0};
@@ -41,7 +41,7 @@ SDLNW_WidgetWindowSet* SDLNW_CreateWidgetWindowSet(void) {
     return set;
 }
 
-void SDLNW_WidgetWindowSet_destroy(SDLNW_WidgetWindowSet* set) {
+void SDLNW_DestroyWidgetWindowSet(SDLNW_WidgetWindowSet* set) {
 
     for (size_t i = 0; i < set->windows_len; i++) {
         __sdlnw_widget_window_destroy(&set->windows[i]);
@@ -52,7 +52,7 @@ void SDLNW_WidgetWindowSet_destroy(SDLNW_WidgetWindowSet* set) {
     __sdlnw_free(set);
 }
 
-void SDLNW_WidgetWindowSet_CreateWidgetWindow(SDLNW_WidgetWindowSet* set, SDLNW_Widget* widget, SDLNW_BootstrapOptions options) {
+void SDLNW_WidgetWindowSet_CreateWidgetWindow(SDLNW_WidgetWindowSet* set, SDLNW_Widget* widget, SDLNW_WidgetWindowOptions options) {
     if (set->windows_len == set->windows_cap) {
         set->windows_cap *= 2;
         set->windows = __sdlnw_realloc(set->windows, sizeof(struct __sdlnw_widget_window) * set->windows_cap);
@@ -76,7 +76,7 @@ void SDLNW_WidgetWindowSet_CreateWidgetWindow(SDLNW_WidgetWindowSet* set, SDLNW_
 
     SDL_SetRenderDrawBlendMode(window->renderer, SDL_BLENDMODE_BLEND);
 
-    SDLNW_Widget_SetNetSize(window->widget, &(SDL_Rect) {.x = 0, .y = 0, .w = screen_width, .h = screen_height});
+    SDLNW_SetWidgetNetSize(window->widget, &(SDL_Rect) {.x = 0, .y = 0, .w = screen_width, .h = screen_height});
 }
 
 static struct __sdlnw_widget_window* get_window_with_id(SDLNW_WidgetWindowSet* set, Uint32 window_id) {
@@ -121,7 +121,7 @@ void SDLNW_CreateWidgetWindowSet_step(SDLNW_WidgetWindowSet* set) {
     for (size_t i = 0; i < set->windows_len; i++) {
         struct __sdlnw_widget_window* w = &set->windows[i];
 
-        SDLNW_Widget_Draw(w->widget, w->renderer);
+        SDLNW_DrawWidget(w->widget, w->renderer);
         SDL_RenderPresent(w->renderer);
     }
 
@@ -149,9 +149,9 @@ void SDLNW_CreateWidgetWindowSet_step(SDLNW_WidgetWindowSet* set) {
                 window->mouse_is_down = false;
 
                 if (square_sum(window->mouse_x_down - window->mouse_x, window->mouse_y_down - window->mouse_y) < 25) {
-                    SDLNW_Widget_Click(window->widget, window->mouse_x, window->mouse_y, event.button.clicks);
+                    SDLNW_ClickWidget(window->widget, window->mouse_x, window->mouse_y, event.button.clicks);
                 } else {
-                    SDLNW_Widget_Drag(window->widget, window->mouse_x_down, window->mouse_y_down, window->mouse_x, window->mouse_y, window->mouse_is_down);
+                    SDLNW_DragWidget(window->widget, window->mouse_x_down, window->mouse_y_down, window->mouse_x, window->mouse_y, window->mouse_is_down);
                 }
             }
 
@@ -166,14 +166,14 @@ void SDLNW_CreateWidgetWindowSet_step(SDLNW_WidgetWindowSet* set) {
                 window->mouse_y = event.motion.y;
 
                 if (window->mouse_is_down) {
-                    SDLNW_Widget_Drag(window->widget, window->mouse_x_down, window->mouse_y_down, window->mouse_x, window->mouse_y, window->mouse_is_down);
+                    SDLNW_DragWidget(window->widget, window->mouse_x_down, window->mouse_y_down, window->mouse_x, window->mouse_y, window->mouse_is_down);
                 } else {
-                    SDL_SystemCursor widget_cursor = SDLNW_Widget_GetAppropriateCursor(window->widget, window->mouse_x, window->mouse_y);
+                    SDL_SystemCursor widget_cursor = SDLNW_GetAppropriateCursorForWidget(window->widget, window->mouse_x, window->mouse_y);
                     SDL_Cursor* cursor =  SDL_CreateSystemCursor(widget_cursor);
                     SDL_SetCursor(cursor);
 
                     // SDLNW_Widget_
-                    SDLNW_Widget_MouseMotion(window->widget, window->mouse_x, window->mouse_y, last_x, last_y);
+                    SDLNW_MouseMotionWidget(window->widget, window->mouse_x, window->mouse_y, last_x, last_y);
                 }
             }
         }
@@ -183,7 +183,7 @@ void SDLNW_CreateWidgetWindowSet_step(SDLNW_WidgetWindowSet* set) {
                 if (event.window.event == SDL_WINDOWEVENT_RESIZED || event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
                     int screen_width, screen_height;
                     SDL_GetWindowSize(window->window, &screen_width, &screen_height);
-                    SDLNW_Widget_SetNetSize(window->widget, &(SDL_Rect) {.x = 0, .y = 0, .w = screen_width, .h = screen_height});
+                    SDLNW_SetWidgetNetSize(window->widget, &(SDL_Rect) {.x = 0, .y = 0, .w = screen_width, .h = screen_height});
                 }
                 else if (event.window.event == SDL_WINDOWEVENT_LEAVE) {
                     int last_x = window->mouse_x;
@@ -192,14 +192,14 @@ void SDLNW_CreateWidgetWindowSet_step(SDLNW_WidgetWindowSet* set) {
                     window->mouse_x = -1;
                     window->mouse_y = -1;
 
-                    SDLNW_Event_MouseMove mm_event = {
+                    SDLNW_MouseMotionEvent mm_event = {
                         .current_x = window->mouse_x,
                         .current_y = window->mouse_y,
                         .last_x = last_x,
                         .last_y = last_y
                     };
 
-                    SDLNW_Widget_TrickleDownEvent(window->widget, SDLNW_EventType_MouseMove, &mm_event, NULL);
+                    SDLNW_TrickleDownEvent(window->widget, SDLNW_EventType_MouseMove, &mm_event, NULL);
                 }
                 else if (event.window.event == SDL_WINDOWEVENT_CLOSE) {
                     close_and_destroy_widget_window(set, window);
@@ -209,27 +209,27 @@ void SDLNW_CreateWidgetWindowSet_step(SDLNW_WidgetWindowSet* set) {
         else if (event.type == SDL_MOUSEWHEEL) {
             struct __sdlnw_widget_window* window = get_window_with_id(set, event.window.windowID);
             if (window) {
-                SDLNW_Widget_MouseScroll(window->widget, window->mouse_x, window->mouse_y, event.wheel.x, event.wheel.y);
+                SDLNW_MouseScrollWidget(window->widget, window->mouse_x, window->mouse_y, event.wheel.x, event.wheel.y);
             }
         }
         else if (event.type == SDL_TEXTINPUT) {
             struct __sdlnw_widget_window* window = get_window_with_id(set, event.window.windowID);
             if (window) {
-                SDLNW_Event_TextInput tinput = {
+                SDLNW_TextInputEvent tinput = {
                     .text = event.text.text
                 };
 
-                SDLNW_Widget_TrickleDownEvent(window->widget, SDLNW_EventType_TextInput, &tinput, NULL);
+                SDLNW_TrickleDownEvent(window->widget, SDLNW_EventType_TextInput, &tinput, NULL);
             }
         }
         else if (event.type == SDL_KEYUP) {
             struct __sdlnw_widget_window* window = get_window_with_id(set, event.window.windowID);
             if (window) {
-                SDLNW_Event_KeyUp ku_event = {
+                SDLNW_KeyUpEvent ku_event = {
                     .key = event.key.keysym.sym
                 };
 
-                SDLNW_Widget_TrickleDownEvent(window->widget, SDLNW_EventType_KeyUp, &ku_event, NULL);
+                SDLNW_TrickleDownEvent(window->widget, SDLNW_EventType_KeyUp, &ku_event, NULL);
             }
         }
     }

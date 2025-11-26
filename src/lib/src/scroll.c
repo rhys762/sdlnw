@@ -1,5 +1,5 @@
 #include "../include/SDLNW.h"
-#include "../include/internal_helpers.h"
+#include "../include/SDLNWInternal.h"
 #include <SDL2/SDL_blendmode.h>
 #include <SDL2/SDL_pixels.h>
 #include <SDL2/SDL_render.h>
@@ -35,7 +35,7 @@ static void scroll_draw_content(void* d, const SDL_Rect* content_size, SDL_Rende
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
     SDL_RenderClear(renderer);
 
-    SDLNW_Widget_Draw(data->child, renderer);
+    SDLNW_DrawWidget(data->child, renderer);
 
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
     SDL_SetRenderTarget(renderer, original_target);
@@ -59,7 +59,7 @@ static int max(int a, int b) {
 static void scroll_set_content_size(void* d, const SDL_Rect* rect) {
     struct scroll_data* data = d;
 
-    SDLNW_SizeResponse response = SDLNW_Widget_GetRequestedSize(data->child, (SDLNW_SizeRequest) {.total_pixels_avaliable_width = rect->w, .total_pixels_avaliable_height = -1});
+    SDLNW_SizeResponse response = SDLNW_GetWidgetRequestedSize(data->child, (SDLNW_SizeRequest) {.total_pixels_avaliable_width = rect->w, .total_pixels_avaliable_height = -1});
 
     int pixels = (response.height.pixels) ? (int)response.height.pixels : rect->h;
     pixels = max(pixels, rect->h);
@@ -68,7 +68,7 @@ static void scroll_set_content_size(void* d, const SDL_Rect* rect) {
     data->texture_height = pixels;
     SDL_DestroyTexture(data->texture);
     data->texture = NULL;
-    SDLNW_Widget_SetNetSize(data->child, &(SDL_Rect){.w = data->texture_width, .h = data->texture_height});
+    SDLNW_SetWidgetNetSize(data->child, &(SDL_Rect){.w = data->texture_width, .h = data->texture_height});
 
     data->window = (SDL_Rect) {
         .x = 0,
@@ -94,7 +94,7 @@ static void scroll_set_content_size(void* d, const SDL_Rect* rect) {
 static void scroll_destroy(SDLNW_Widget* w) {
     struct scroll_data* data = w->data;
 
-    SDLNW_Widget_Destroy(data->child);
+    SDLNW_DestroyWidget(data->child);
     data->child = NULL;
     SDL_DestroyTexture(data->texture);
     data->texture = NULL;
@@ -106,7 +106,7 @@ static void scroll_destroy(SDLNW_Widget* w) {
 static SDL_SystemCursor scroll_appropriate_cursor(SDLNW_Widget* w, int x, int y) {
     struct scroll_data* data = w->data;
 
-    return SDLNW_Widget_GetAppropriateCursor(data->child, x + data->window.x - w->net_size.x, y + data->window.y - w->net_size.y);
+    return SDLNW_GetAppropriateCursorForWidget(data->child, x + data->window.x - w->net_size.x, y + data->window.y - w->net_size.y);
 }
 
 // need to offset x and y values of incoming events to account
@@ -114,9 +114,9 @@ static SDL_SystemCursor scroll_appropriate_cursor(SDLNW_Widget* w, int x, int y)
 static void scroll_trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, bool* allow_passthrough) {
     struct scroll_data* data = widget->data;
 
-    SDLNW_Event_MouseMove motion_event = {0};
-    SDLNW_Event_Click click_event = {0};
-    SDLNW_Event_Drag drag = {0};
+    SDLNW_MouseMotionEvent motion_event = {0};
+    SDLNW_ClickEvent click_event = {0};
+    SDLNW_DragEvent drag = {0};
 
     int x_offset = data->window.x - widget->net_size.x;
     int y_offset = data->window.y - widget->net_size.y;
@@ -124,7 +124,7 @@ static void scroll_trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType
     // todo others.
     if (type == SDLNW_EventType_Click) {
         // get offset from the scroll widget, then add offset of scroll
-        SDLNW_Event_Click* incoming = event_meta;
+        SDLNW_ClickEvent* incoming = event_meta;
 
         click_event = *incoming;
 
@@ -134,9 +134,9 @@ static void scroll_trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType
         event_meta = &click_event;
     }
     else if (type == SDLNW_EventType_MouseMove) {
-        SDLNW_Event_MouseMove* incoming = event_meta;
+        SDLNW_MouseMotionEvent* incoming = event_meta;
 
-        motion_event = (SDLNW_Event_MouseMove){
+        motion_event = (SDLNW_MouseMotionEvent){
             .current_x = incoming->current_x + x_offset,
             .current_y = incoming->current_y + y_offset,
             .last_x = incoming->last_x + x_offset,
@@ -148,7 +148,7 @@ static void scroll_trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType
     else if (type == SDLNW_EventType_MouseDrag) {
         // TODO save position on drag start, scroll might
         // change while dragging.
-        SDLNW_Event_Drag* incoming = event_meta;
+        SDLNW_DragEvent* incoming = event_meta;
         drag = *incoming;
 
         drag.mouse_x += x_offset;
@@ -161,11 +161,11 @@ static void scroll_trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType
     // TODO scroll should produce a mouce motion event,
     // since we may have scrolled somthing under/out from under the mouse.
 
-    SDLNW_Widget_TrickleDownEvent(data->child, type, event_meta, allow_passthrough);
+    SDLNW_TrickleDownEvent(data->child, type, event_meta, allow_passthrough);
 }
 
 // TODO x
-static void scroll_mouse_scroll(SDLNW_Widget* widget, SDLNW_Event_MouseWheel* event, bool* allow_passthrough) {
+static void scroll_mouse_scroll(SDLNW_Widget* widget, SDLNW_MouseWheelEvent* event, bool* allow_passthrough) {
     struct scroll_data* data = widget->data;
 
     int delta_y = -20 * event->delta_y;
@@ -189,7 +189,7 @@ static void scroll_mouse_scroll(SDLNW_Widget* widget, SDLNW_Event_MouseWheel* ev
     data->y_scroll_bar.y = (int)(y_proportion_scrolled * (float)y_scroll_max) + widget->content_size.y;
 }
 
-static void scroll_drag(SDLNW_Widget* widget, SDLNW_Event_Drag* event, bool* allow_passthrough) {
+static void scroll_drag(SDLNW_Widget* widget, SDLNW_DragEvent* event, bool* allow_passthrough) {
     (void)allow_passthrough; // unused for now, revisit when have more complicated examples since I can't forsee how it should work.
     struct scroll_data* data = widget->data;
 
@@ -253,7 +253,7 @@ SDLNW_Widget* SDLNW_CreateScrollWidget(SDLNW_Widget* child) {
     *data = (struct scroll_data) {.child = child};
     widget->data = data;
 
-    SDLNW_Widget_SetNetSize(data->child, &widget->content_size);
+    SDLNW_SetWidgetNetSize(data->child, &widget->content_size);
 
     return widget;
 }

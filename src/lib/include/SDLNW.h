@@ -6,6 +6,11 @@
 #include <SDL2/SDL_pixels.h>
 #include <stdbool.h>
 
+/*
+    Public declerations for the SDLNW library.
+*/
+
+// describes rounded corners of widget
 typedef struct {
     int top_left;
     int top_right;
@@ -13,8 +18,7 @@ typedef struct {
     int bottom_right;
 } SDLNW_CornerRadius;
 
-bool SDLNW_CornerRadius_comp(const SDLNW_CornerRadius* a, const SDLNW_CornerRadius* b);
-
+// describes padding or margin
 typedef struct {
     int top;
     int right;
@@ -22,14 +26,10 @@ typedef struct {
     int left;
 } SDLNW_Insets;
 
-/*
-    Public declerations for the SDLNW library.
-*/
-
-struct struct_SDLNW_Widget;
-typedef struct struct_SDLNW_Widget SDLNW_Widget;
-
-// indicates how much space is avaliable
+// passed to a child widget by a parent when asking
+// it's required size. The child can use the
+// avaliable width to determine how much height it
+// needs etc
 typedef struct {
     // if negative then flex
     // 0 means 0
@@ -38,7 +38,7 @@ typedef struct {
     // etc
     int total_pixels_avaliable_width;
     int total_pixels_avaliable_height;
-} SDLNW_SizeRequest;
+} SDLNW_SizeRequest; // TODO poor name query
 
 // indicates how much of avaliable space (above) is required
 typedef struct {
@@ -50,17 +50,15 @@ typedef struct {
     // and another widget 2, then this widget will recieve a third of the
     // avaliable space.
     size_t shares;
-} SDLNW_DimensionSizeRequest;
+} SDLNW_DimensionSizeRequest; // TODO poor name
 
 typedef struct {
     SDLNW_DimensionSizeRequest width;
     SDLNW_DimensionSizeRequest height;
 } SDLNW_SizeResponse;
 
-enum SDLNW_SizingDimension {
-    SDLNW_SizingDimension_Width,
-    SDLNW_SizingDimension_Height
-};
+struct struct_SDLNW_Widget;
+typedef struct struct_SDLNW_Widget SDLNW_Widget;
 
 enum SDLNW_EventType {
     SDLNW_EventType_Click,
@@ -74,33 +72,34 @@ enum SDLNW_EventType {
 typedef struct {
     int x, y;
     Uint8 clicks;
-} SDLNW_Event_Click;
+} SDLNW_ClickEvent;
 
 typedef struct {
     // mouse pos
     int x, y;
     // how much was scrolled, apparently some wheels can scroll in the x direction.
     int delta_x, delta_y;
-} SDLNW_Event_MouseWheel;
+} SDLNW_MouseWheelEvent;
 
 typedef struct {
     int mouse_x, mouse_y, origin_x, origin_y;
     bool still_down;
-} SDLNW_Event_Drag;
+} SDLNW_DragEvent;
 
 typedef struct {
     int current_x, current_y;
     int last_x, last_y;
-} SDLNW_Event_MouseMove;
+} SDLNW_MouseMotionEvent;
 
 typedef struct {
     SDL_Keycode key;
-} SDLNW_Event_KeyUp;
+} SDLNW_KeyUpEvent;
 
 typedef struct {
     const char* text;
-} SDLNW_Event_TextInput;
+} SDLNW_TextInputEvent;
 
+// internal v table, should not be called directly.
 typedef struct {
     void (*draw_content)(void* widget_data, const SDL_Rect* content_size, SDL_Renderer* renderer);
     void (*set_content_size)(void* widget_data, const SDL_Rect* rect);
@@ -114,16 +113,18 @@ typedef struct {
     void (*trickle_down_event)(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, bool* allow_passthrough);
 
     // a click has occurred on the app, may not be this widget
-    void (*click)(SDLNW_Widget* w, SDLNW_Event_Click* event, bool* allow_passthrough);
-    void (*mouse_scroll)(SDLNW_Widget* widget, SDLNW_Event_MouseWheel* event, bool* allow_passthrough);
-    void (*drag)(SDLNW_Widget* widget, SDLNW_Event_Drag* event, bool* allow_passthrough);
-    void (*on_hover_on)(SDLNW_Widget* widget, SDLNW_Event_MouseMove* event, bool* allow_passthrough);
-    void (*on_hover_off)(SDLNW_Widget* widget, SDLNW_Event_MouseMove* event, bool* allow_passthrough);
-    void (*on_key_up)(SDLNW_Widget* widget, SDLNW_Event_KeyUp* event, bool* allow_passthrough);
-    void (*on_text_input)(SDLNW_Widget* widget, SDLNW_Event_TextInput* event, bool* allow_passthrough);
-} SDLNW_Widget_VTable;
+    void (*click)(SDLNW_Widget* w, SDLNW_ClickEvent* event, bool* allow_passthrough);
+    void (*mouse_scroll)(SDLNW_Widget* widget, SDLNW_MouseWheelEvent* event, bool* allow_passthrough);
+    void (*drag)(SDLNW_Widget* widget, SDLNW_DragEvent* event, bool* allow_passthrough);
+    void (*on_hover_on)(SDLNW_Widget* widget, SDLNW_MouseMotionEvent* event, bool* allow_passthrough);
+    void (*on_hover_off)(SDLNW_Widget* widget, SDLNW_MouseMotionEvent* event, bool* allow_passthrough);
+    void (*on_key_up)(SDLNW_Widget* widget, SDLNW_KeyUpEvent* event, bool* allow_passthrough);
+    void (*on_text_input)(SDLNW_Widget* widget, SDLNW_TextInputEvent* event, bool* allow_passthrough);
+} SDLNW_WidgetVTable;
 
 typedef struct {
+    int border_width;
+
     SDL_Texture* cached_texture;
     int cached_width;
     int cached_height;
@@ -134,14 +135,7 @@ typedef struct {
     void (*destroy_data)(void* border_data);
 } SDLNW_Border;
 
-void SDLNW_Border_draw(SDLNW_Border* border, SDL_Renderer* renderer, const SDL_Rect* to, const SDLNW_CornerRadius* radius);
-SDLNW_Border* SDLNW_Border_create_solid(int width, SDL_Colour colour);
-void SDLNW_Border_destroy(SDLNW_Border* border);
-
-struct __SDLNW_TextControllerChangeListener;
 typedef struct __SDLNW_TextControllerChangeListener SDLNW_TextControllerChangeListener;
-
-SDLNW_TextControllerChangeListener* SDLNW_CreateTextControllerChangeListener(void* data, void (*callback) (void*,char*), void (*free_data)(void*));
 
 typedef struct {
     char* text;
@@ -153,47 +147,15 @@ typedef struct {
     size_t listeners_capacity;
 } SDLNW_TextController;
 
-// cleaner v-table calls
-void SDLNW_Widget_Draw(SDLNW_Widget* w, SDL_Renderer* renderer);
-void SDLNW_Widget_SetNetSize(SDLNW_Widget* w, const SDL_Rect* rect);
-void SDLNW_Widget_Click(SDLNW_Widget* w, int x, int y, Uint8 clicks);
-void SDLNW_Widget_Drag(SDLNW_Widget* w, int mouse_x_start, int mouse_y_start, int mouse_x, int mouse_y, bool still_down);
-SDL_SystemCursor SDLNW_Widget_GetAppropriateCursor(SDLNW_Widget* w, int x, int y);
-SDLNW_SizeResponse SDLNW_Widget_GetRequestedSize(SDLNW_Widget* w, SDLNW_SizeRequest request);
-void SDLNW_Widget_Destroy(SDLNW_Widget* w);
-void SDLNW_Widget_TrickleDownEvent(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, bool* allow_passthrough);
-void SDLNW_Widget_MouseScroll(SDLNW_Widget* w, int x, int y, int delta_x, int delta_y);
-void SDLNW_Widget_MouseMotion(SDLNW_Widget* w, int x, int y, int last_x, int last_y);
-// other helpers
-void SDLNW_Widget_add_border(SDLNW_Widget* w, SDLNW_Border* border); // takes ownership
-void SDLNW_Widget_set_corner_radius(SDLNW_Widget* w, SDLNW_CornerRadius radius); // set radius for background and border
-void SDLNW_Widget_set_padding(SDLNW_Widget* w, SDLNW_Insets insets);
-
-// adds data and callback which will be executed when the widget is destroyed
-// usefull for state cleanup
-void SDLNW_Widget_AddOnDestroy(SDLNW_Widget* w, void* data, void(*cb)(void* data));
-
-// trigger a rebuild of a composite widget
-void SDLNW_Widget_Recompose(SDLNW_Widget* w);
-
-// router functions
-void SDLNW_Widget_RouterPush(SDLNW_Widget* w, const char* path);
-void SDLNW_Widget_RouterReplace(SDLNW_Widget* w, const char* path);
-void SDLNW_Widget_RouterBack(SDLNW_Widget* w);
-void SDLNW_Widget_RouterAddRoute(SDLNW_Widget* w, const char* path, void* data, SDLNW_Widget* build_route(void* data, const char* path));
-
 typedef struct __sdlnw_Background_struct SDLNW_Background;
-
-void SDLNW_Background_render(SDLNW_Background* bg, SDL_Renderer* renderer, const SDL_Rect* widget_net_size, const SDLNW_CornerRadius* radius);
-void SDLNW_Background_destroy(SDLNW_Background* bg);
-
-SDLNW_Background* SDLNW_CreateSolidBackground(SDL_Colour);
 
 // TODO Can this be moved to an internal .h file?
 struct struct_SDLNW_Widget {
-    SDLNW_Widget_VTable vtable;
-    SDL_Rect net_size; // content + padding
+    SDLNW_WidgetVTable vtable;
+    SDL_Rect net_size; // content + padding + border width + margin
     SDL_Rect content_size;
+    SDL_Rect content_and_padding_size;
+    SDL_Rect content_padding_and_border_size;
     // specific implementation data
     void* data;
     // on destroy data + callbacks
@@ -201,36 +163,136 @@ struct struct_SDLNW_Widget {
 
     SDLNW_Border* border;
     SDLNW_Insets padding;
+    SDLNW_Insets margin;
     SDLNW_CornerRadius radius;
     SDLNW_Background* background;
 };
 
-/*
-    Font management and caching.
-*/
+typedef struct {
+    int width_pixels;
+    int width_shares;
+    int height_pixels;
+    int height_shares;
+} SDLNW_SizedBoxWidgetOptions;
 
+// this struct isn't giving anything that TTF_Font isn't
+// TODO remove.
 typedef struct {
     TTF_Font* font;
     int line_height;
 } SDLNW_Font;
 
-SDLNW_Font* SDLNW_Font_Create(const char* path, int ptsize);
-void SDLNW_Font_Destroy(SDLNW_Font* font);
+typedef struct {
+    // controller for the text, MANDATORY
+    // does NOT take ownership
+    SDLNW_TextController* text_controller;
+
+    // the user can highlight text, to copy from
+    bool selectable;
+    // if true, user can click on an edit text. Requires selectable
+    bool editable;
+    // allow newlines when editing
+    bool allow_newlines;
+
+    SDLNW_Font* font;
+    // color to render font in
+    SDL_Colour fg;
+    // color to highlight selection
+    SDL_Colour highlight;
+} SDLNW_TextWidgetOptions;
+
+struct struct_SDLNW_WidgetWindowSet;
+typedef struct struct_SDLNW_WidgetWindowSet SDLNW_WidgetWindowSet;
+
+// unused should be left NULL
+typedef struct {
+    void* data;
+    void(*on_click)(void* data, int x, int y, bool* allow_passthrough);
+    void(*on_mouse_hover_on)(void* data, bool* allow_passthrough);
+    void(*on_mouse_hover_off)(void* data, bool* allow_passthrough);
+    void(*on_key_up)(void* data, SDL_Keycode c, bool* allow_passthrough);
+} SDLNW_GestureDetectorWidgetOptions;
+
+// all optional and will be overriden by 'sensible' defaults if 0.
+typedef struct {
+    char* title;
+    int initial_width;
+    int initial_height;
+    int sdl_window_flags;
+} SDLNW_WidgetWindowOptions;
+
+/*
+ * Widget sizing, borders and backgrounds
+ */
+
+void SDLNW_DrawBorder(SDLNW_Border* border, SDL_Renderer* renderer, const SDL_Rect* to, const SDLNW_CornerRadius* radius);
+SDLNW_Border* SDLNW_CreateSolidBorder(int width, SDL_Colour colour);
+void SDLNW_DestroyBorder(SDLNW_Border* border);
+void SDLNW_SetWidgetBorder(SDLNW_Widget* w, SDLNW_Border* border); // takes ownership
+
+void SDLNW_SetWidgetCornerRadius(SDLNW_Widget* w, SDLNW_CornerRadius radius);
+void SDLNW_SetWidgetPadding(SDLNW_Widget* w, SDLNW_Insets insets);
+void SDLNW_SetWidgetMargin(SDLNW_Widget* w, SDLNW_Insets insets);
+
+void SDLNW_SetWidgetBackground(SDLNW_Widget* w, SDLNW_Background* bg);
+void SDLNW_RenderBackground(SDLNW_Background* bg, SDL_Renderer* renderer, const SDL_Rect* widget_net_size, const SDLNW_CornerRadius* radius);
+void SDLNW_DestroyBackground(SDLNW_Background* bg);
+
+SDLNW_Background* SDLNW_CreateSolidBackground(SDL_Colour);
+
+/*
+ * Text Controller
+ */
+
+SDLNW_TextControllerChangeListener* SDLNW_CreateTextControllerChangeListener(void* data, void (*callback) (void*,char*), void (*free_data)(void*));
+
+/*
+ * Widget interaction
+ */
+
+void SDLNW_DrawWidget(SDLNW_Widget* w, SDL_Renderer* renderer);
+void SDLNW_SetWidgetNetSize(SDLNW_Widget* w, const SDL_Rect* rect);
+void SDLNW_ClickWidget(SDLNW_Widget* w, int x, int y, Uint8 clicks);
+void SDLNW_DragWidget(SDLNW_Widget* w, int mouse_x_start, int mouse_y_start, int mouse_x, int mouse_y, bool still_down);
+SDL_SystemCursor SDLNW_GetAppropriateCursorForWidget(SDLNW_Widget* w, int x, int y);
+SDLNW_SizeResponse SDLNW_GetWidgetRequestedSize(SDLNW_Widget* w, SDLNW_SizeRequest request);
+void SDLNW_DestroyWidget(SDLNW_Widget* w);
+void SDLNW_TrickleDownEvent(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, bool* allow_passthrough);
+void SDLNW_MouseScrollWidget(SDLNW_Widget* w, int x, int y, int delta_x, int delta_y);
+void SDLNW_MouseMotionWidget(SDLNW_Widget* w, int x, int y, int last_x, int last_y);
+
+// adds data and callback which will be executed when the widget is destroyed
+// usefull for state cleanup
+void SDLNW_AddOnWidgetDestroyCb(SDLNW_Widget* w, void* data, void(*cb)(void* data));
+
+// trigger a rebuild of a composite widget
+void SDLNW_RecomposeWidget(SDLNW_Widget* w);
+
+// router functions
+void SDLNW_RouterPush(SDLNW_Widget* w, const char* path);
+void SDLNW_RouterReplace(SDLNW_Widget* w, const char* path);
+void SDLNW_RouterBack(SDLNW_Widget* w);
+void SDLNW_RouterAddRoute(SDLNW_Widget* w, const char* path, void* data, SDLNW_Widget* build_route(void* data, const char* path));
+
+
+
+SDLNW_Font* SDLNW_CreateFont(const char* path, int ptsize);
+void SDLNW_DestroyFont(SDLNW_Font* font);
 
 /*
     Text controller manipulation
 */
 
-void SDLNW_TextController_init(SDLNW_TextController* tc);
-void SDLNW_TextController_destroy(SDLNW_TextController* tc);
+void SDLNW_InitTextController(SDLNW_TextController* tc);
+void SDLNW_DestroyTextController(SDLNW_TextController* tc);
 
-void SDLNW_TextController_insert(SDLNW_TextController* tc, char c, size_t idx);
-void SDLNW_TextController_remove(SDLNW_TextController* tc, size_t idx);
-void SDLNW_TextController_add_change_listener(SDLNW_TextController* tc, SDLNW_TextControllerChangeListener* tccl);
+void SDLNW_TextControllerInsert(SDLNW_TextController* tc, char c, size_t idx);
+void SDLNW_TextControllerRemove(SDLNW_TextController* tc, size_t idx);
+void SDLNW_AddTextControllerChangeListener(SDLNW_TextController* tc, SDLNW_TextControllerChangeListener* tccl);
 // returns true if successfull, false if not present
-bool SDLNW_TextController_remove_change_listener(SDLNW_TextController* tc, SDLNW_TextControllerChangeListener* tccl);
-void SDLNW_TextController_set_value(SDLNW_TextController* tc, const char* text);
-char* SDLNW_TextController_get_value(const SDLNW_TextController* tc);
+bool SDLNW_RemoveTextControllerChangeListener(SDLNW_TextController* tc, SDLNW_TextControllerChangeListener* tccl);
+void SDLNW_SetTextControllerValue(SDLNW_TextController* tc, const char* text);
+char* SDLNW_GetTextControllerValue(const SDLNW_TextController* tc);
 
 /*
     Widget creators
@@ -250,82 +312,39 @@ SDLNW_Widget* SDLNW_CreateCompositeWidget(void* data, SDLNW_Widget*(*cb)(SDLNW_W
 SDLNW_Widget* SDLNW_CreateRouterWidget(void* data, SDLNW_Widget* create_home_widget(void* data, const char* path));
 // nests a widget inside a scroll area
 SDLNW_Widget* SDLNW_CreateScrollWidget(SDLNW_Widget* child);
-// forcefully sizes its child
-typedef struct {
-    int width_pixels;
-    int width_shares;
-    int height_pixels;
-    int height_shares;
-} SDLNW_SizedBoxWidget_Options;
 // can force a child to be a certain width/height
-SDLNW_Widget* SDLNW_CreateSizedBoxWidget(SDLNW_Widget* child, SDLNW_SizedBoxWidget_Options opts);
+SDLNW_Widget* SDLNW_CreateSizedBoxWidget(SDLNW_Widget* child, SDLNW_SizedBoxWidgetOptions opts);
 // detects clicks, mouse hover etc
-// unused should be left NULL
 // setting allow_passthrough to false will stop the event propogating to parents,
 // ie set to true if the event should not go to widgets behind
-typedef struct {
-    void* data;
-    void(*on_click)(void* data, int x, int y, bool* allow_passthrough);
-    void(*on_mouse_hover_on)(void* data, bool* allow_passthrough);
-    void(*on_mouse_hover_off)(void* data, bool* allow_passthrough);
-    void(*on_key_up)(void* data, SDL_Keycode c, bool* allow_passthrough);
-} SDLNW_GestureDetectorWidget_Options;
-SDLNW_Widget* SDLNW_CreateGestureDetectorWidget(SDLNW_Widget* child, SDLNW_GestureDetectorWidget_Options options);
+SDLNW_Widget* SDLNW_CreateGestureDetectorWidget(SDLNW_Widget* child, SDLNW_GestureDetectorWidgetOptions options);
 // centres a smaller widget within itself
 SDLNW_Widget* SDLNW_CreateCentreWidget(SDLNW_Widget* child);
 // draws arbritrary contents
 SDLNW_Widget* SDLNW_CreateCanvasWidget(void* data, void(*cb)(void* data, const SDL_Rect* size, SDL_Renderer* renderer));
 // a text widget, holds static or editable text
-typedef struct {
-    // controller for the text, MANDATORY
-    // does NOT take ownership
-    SDLNW_TextController* text_controller;
-
-    // the user can highlight text, to copy from
-    bool selectable;
-    // if true, user can click on an edit text. Requires selectable
-    bool editable;
-    // allow newlines when editing
-    bool allow_newlines;
-
-    SDLNW_Font* font;
-    // color to render font in
-    SDL_Colour fg;
-    // color to highlight selection
-    SDL_Colour highlight;
-} SDLNW_TextWidgetOptions;
 SDLNW_Widget* SDLNW_CreateTextWidget(SDLNW_TextWidgetOptions options);
-
-// all optional and will be overriden by 'sensible' defaults if 0.
-typedef struct {
-    char* title;
-    int initial_width;
-    int initial_height;
-    int sdl_window_flags;
-} SDLNW_BootstrapOptions;
+// empty widget, for taking up space
+SDLNW_Widget* SDLNW_CreateEmptyWidget(void);
 
 /*
-    Bootstrap is to make a 'simple' gui app easy, in theory a main should be able to
-    - init sdl and ttf
-    - create a widget
-    - pass it to bootstrap.
-    - destroy widget after bootstrap returns
-    - quit sdl and ttf
-*/
-
-void SDLNW_bootstrap(SDLNW_Widget* widget, SDLNW_BootstrapOptions options);
-
-struct struct_SDLNW_WidgetWindowSet;
-typedef struct struct_SDLNW_WidgetWindowSet SDLNW_WidgetWindowSet;
+ * Widget Window
+ */
 
 SDLNW_WidgetWindowSet* SDLNW_CreateWidgetWindowSet(void);
-void SDLNW_WidgetWindowSet_destroy(SDLNW_WidgetWindowSet* set);
+void SDLNW_DestroyWidgetWindowSet(SDLNW_WidgetWindowSet* set);
 
-void SDLNW_WidgetWindowSet_CreateWidgetWindow(SDLNW_WidgetWindowSet* set, SDLNW_Widget* widget, SDLNW_BootstrapOptions options);
+void SDLNW_WidgetWindowSet_CreateWidgetWindow(SDLNW_WidgetWindowSet* set, SDLNW_Widget* widget, SDLNW_WidgetWindowOptions options);
 void SDLNW_CreateWidgetWindowSet_step(SDLNW_WidgetWindowSet* set);
 size_t SDLNW_CreateWidgetWindowSet_get_number_of_windows(SDLNW_WidgetWindowSet* set);
 
+/*
+ * Misc
+ */
+
+// return true if two corner radius' are the same
+bool SDLNW_CompareCornerRadius(const SDLNW_CornerRadius* a, const SDLNW_CornerRadius* b);
 // debuging mem leaks with the debug build
-void SDLNW_debug_report_leaks(void);
+void SDLNW_ReportLeaks(void);
 
 #endif

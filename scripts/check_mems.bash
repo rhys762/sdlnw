@@ -11,6 +11,6 @@ function do_grep() {
     grep -rn '\sfree(' src/lib/
 }
 
-do_grep | grep -v src/lib/include/internal_helpers.h | grep -v src/lib/src/internal_helpers.c
+do_grep | grep -v src/lib/include/SDLNWInternal.h | grep -v src/lib/src/internal_helpers.c
 
 exit 0

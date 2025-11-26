@@ -1,5 +1,5 @@
-#ifndef SDLNW_INTERNAL_HELPERS_H
-#define SDLNW_INTERNAL_HELPERS_H
+#ifndef SDLNW_INTERNAL_H
+#define SDLNW_INTERNAL_H
 
 #include "SDLNW.h"
 #include <SDL2/SDL_render.h>
@@ -68,9 +68,11 @@ typedef struct {
     int width;
     int height;
     SDL_Texture* texture;
+
+    SDL_Colour colour;
 } __sdlnw_RenderedText;
 
-void __sdlnw_RenderedText_init(__sdlnw_RenderedText* rt, SDLNW_Font* font);
+void __sdlnw_RenderedText_init(__sdlnw_RenderedText* rt, SDLNW_Font* font, SDL_Colour colour);
 void __sdlnw_RenderedText_destroy(__sdlnw_RenderedText* rt);
 
 // text has updated, respace. to width and height of 0 will be interpreted as infinity
@@ -100,5 +102,11 @@ bool __sdlnw_int_spline_rounded_box_within_bounds(const __sdlnw_int_spline_round
 
 SDL_Rect __sdlnw_add_inset(const SDL_Rect* rect, const SDLNW_Insets* inset);
 SDL_Rect __sdlnw_sub_inset(const SDL_Rect* rect, const SDLNW_Insets* inset);
+
+#define UNPACK_RECT(r) r.x, r.y, r.w, r.h
+
+// text widgets cache renders, which only works if the renderer doesnt change
+// during testing, this is expected.
+void __sdlnw_clear_text_widget_cache(SDLNW_Widget* textWidget);
 
 #endif

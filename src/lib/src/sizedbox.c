@@ -1,33 +1,33 @@
 #include "../include/SDLNW.h"
-#include "../include/internal_helpers.h"
+#include "../include/SDLNWInternal.h"
 #include <SDL2/SDL_rect.h>
 
 struct sized_box_data {
     SDLNW_Widget* child;
-    SDLNW_SizedBoxWidget_Options opts;
+    SDLNW_SizedBoxWidgetOptions opts;
 };
 
 static void sizedbox_draw_content(void* d, const SDL_Rect* content_size, SDL_Renderer* renderer) {
     (void)content_size;
     struct sized_box_data* data = d;
-    SDLNW_Widget_Draw(data->child, renderer);
+    SDLNW_DrawWidget(data->child, renderer);
 }
 
 static void sizedbox_set_content_size(void* d, const SDL_Rect* rect) {
     struct sized_box_data* data = d;
-    SDLNW_Widget_SetNetSize(data->child, rect);
+    SDLNW_SetWidgetNetSize(data->child, rect);
 }
 
 SDL_SystemCursor sizedbox_appropriate_cursor(SDLNW_Widget* w, int x, int y) {
     struct sized_box_data* data = w->data;
 
-    return SDLNW_Widget_GetAppropriateCursor(data->child, x, y);
+    return SDLNW_GetAppropriateCursorForWidget(data->child, x, y);
 }
 
 void sizedbox_destroy(SDLNW_Widget* w) {
     struct sized_box_data* data = w->data;
 
-    SDLNW_Widget_Destroy(data->child);
+    SDLNW_DestroyWidget(data->child);
     data->child = NULL;
 
     __sdlnw_free(data);
@@ -51,10 +51,10 @@ static SDLNW_SizeResponse sizedbox_get_requested_size(SDLNW_Widget* w, SDLNW_Siz
 
 static void sizedbox_trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, bool* allow_passthrough) {
     struct sized_box_data* data = widget->data;
-    SDLNW_Widget_TrickleDownEvent(data->child, type, event_meta, allow_passthrough);
+    SDLNW_TrickleDownEvent(data->child, type, event_meta, allow_passthrough);
 }
 
-SDLNW_Widget* SDLNW_CreateSizedBoxWidget(SDLNW_Widget* child, SDLNW_SizedBoxWidget_Options opts) {
+SDLNW_Widget* SDLNW_CreateSizedBoxWidget(SDLNW_Widget* child, SDLNW_SizedBoxWidgetOptions opts) {
     SDLNW_Widget* widget = create_default_widget();
 
     widget->vtable.draw_content = sizedbox_draw_content;

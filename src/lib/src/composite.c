@@ -1,61 +1,76 @@
 #include "../include/SDLNW.h"
-#include "../include/internal_helpers.h"
+#include "../include/SDLNWInternal.h"
 
 struct composite_data {
     SDLNW_Widget* child;
+    // widget we will be replacing child with
+    SDLNW_Widget* buffer;
+
     void* data;
     SDLNW_Widget*(*cb)(SDLNW_Widget* parent, void*data);
 };
+
+static void resolve_buffer(struct composite_data* data, const SDL_Rect* content_size) {
+    if (data->buffer) {
+        if (data->child) {
+            SDLNW_DestroyWidget(data->child);
+        }
+        data->child = data->buffer;
+        data->buffer = NULL;
+
+        SDLNW_SetWidgetNetSize(data->child, content_size);
+    }
+}
 
 static void composite_draw_content(void* data, const SDL_Rect* content_size, SDL_Renderer* renderer) {
     (void)content_size;
 
     struct composite_data* d = data;
-    SDLNW_Widget_Draw(d->child, renderer);
+    resolve_buffer(data, content_size);
+    SDLNW_DrawWidget(d->child, renderer);
 }
 
 static void composite_set_content_size(void* data, const SDL_Rect* rect) {
     struct composite_data* d = data;
 
-    SDLNW_Widget_SetNetSize(d->child, rect);
+    SDLNW_SetWidgetNetSize(d->child, rect);
 }
 
 static SDL_SystemCursor composite_appropriate_cursor(SDLNW_Widget* w, int x, int y) {
     struct composite_data* data = w->data;
-    return SDLNW_Widget_GetAppropriateCursor(data->child, x, y);
+    return SDLNW_GetAppropriateCursorForWidget(data->child, x, y);
 }
 
 static void composite_destroy(SDLNW_Widget* w) {
     struct composite_data* data = w->data;
 
-    SDLNW_Widget_Destroy(data->child);
+    SDLNW_DestroyWidget(data->child);
 
     __sdlnw_free(w->data);
     w->data = NULL;
 }
 
-void SDLNW_Widget_Recompose(SDLNW_Widget* w) {
+void SDLNW_RecomposeWidget(SDLNW_Widget* w) {
     struct composite_data* data = w->data;
 
-    if (data->child != NULL) {
-        SDLNW_Widget_Destroy(data->child);
-        data->child = NULL;
+    if (data->buffer != NULL) {
+        SDLNW_DestroyWidget(data->buffer);
+        data->buffer = NULL;
     }
 
-    data->child = data->cb(w, data->data);
-    SDLNW_Widget_SetNetSize(data->child, &w->content_size);
+    data->buffer = data->cb(w, data->data);
 }
 
 static SDLNW_SizeResponse composite_get_requested_size(SDLNW_Widget* w, SDLNW_SizeRequest request) {
     struct composite_data* data = w->data;
 
-    return SDLNW_Widget_GetRequestedSize(data->child, request);
+    return SDLNW_GetWidgetRequestedSize(data->child, request);
 }
 
 static void composite_trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, bool* allow_passthrough) {
     struct composite_data* data = widget->data;
 
-    SDLNW_Widget_TrickleDownEvent(data->child, type, event_meta, allow_passthrough);
+    SDLNW_TrickleDownEvent(data->child, type, event_meta, allow_passthrough);
 }
 
 SDLNW_Widget* SDLNW_CreateCompositeWidget(void* data, SDLNW_Widget*(*cb)(SDLNW_Widget* parent, void*data)) {
@@ -71,7 +86,8 @@ SDLNW_Widget* SDLNW_CreateCompositeWidget(void* data, SDLNW_Widget*(*cb)(SDLNW_W
     widget->data = __sdlnw_malloc(sizeof(struct composite_data));
     *((struct composite_data*)widget->data) = (struct composite_data){ .child = NULL, .data = data, .cb = cb};
 
-    SDLNW_Widget_Recompose(widget);
+    SDLNW_RecomposeWidget(widget);
+    resolve_buffer(widget->data, &widget->content_size);
 
     return widget;
 }

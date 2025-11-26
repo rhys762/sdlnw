@@ -1,5 +1,5 @@
 #include "SDLNW.h"
-#include "internal_helpers.h"
+#include "SDLNWInternal.h"
 #include <SDL2/SDL_render.h>
 
 // TODO memory free
@@ -11,7 +11,7 @@ struct __sdlnw_Background_struct {
     int cached_width, cached_height;
 };
 
-void SDLNW_Background_render(SDLNW_Background* bg, SDL_Renderer* renderer, const SDL_Rect* widget_net_size, const SDLNW_CornerRadius* radius) {
+void SDLNW_RenderBackground(SDLNW_Background* bg, SDL_Renderer* renderer, const SDL_Rect* widget_net_size, const SDLNW_CornerRadius* radius) {
     // flush cache if dimensions have changed
     if (bg->texture) {
         if (bg->cached_width != widget_net_size->w || bg->cached_height != widget_net_size->h) {
@@ -64,7 +64,7 @@ void SDLNW_Background_render(SDLNW_Background* bg, SDL_Renderer* renderer, const
     }
 }
 
-void SDLNW_Background_destroy(SDLNW_Background* bg) {
+void SDLNW_DestroyBackground(SDLNW_Background* bg) {
     __sdlnw_free(bg);
 }
 

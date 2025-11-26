@@ -1,5 +1,5 @@
 #include "../include/SDLNW.h"
-#include "../include/internal_helpers.h"
+#include "../include/SDLNWInternal.h"
 
 struct column_data {
     SDLNW_Widget** list;
@@ -12,7 +12,7 @@ static void column_draw_content(void* data, const SDL_Rect* content_size, SDL_Re
     struct column_data* d = data;
 
     for (size_t i = 0; i < d->list_len; i++) {
-        SDLNW_Widget_Draw(d->list[i], renderer);
+        SDLNW_DrawWidget(d->list[i], renderer);
     }
 }
 
@@ -26,7 +26,7 @@ static void column_set_content_size(void* d, const SDL_Rect* rect) {
 
     // TOOD cache requested size? maybe
     for (size_t i = 0; i < data->list_len; i++) {
-        SDLNW_SizeResponse r = SDLNW_Widget_GetRequestedSize(data->list[i], (SDLNW_SizeRequest) {.total_pixels_avaliable_width = rect->w});
+        SDLNW_SizeResponse r = SDLNW_GetWidgetRequestedSize(data->list[i], (SDLNW_SizeRequest) {.total_pixels_avaliable_width = rect->w});
 
         allocated_pixels += r.height.pixels;
         shares += r.height.shares;
@@ -42,12 +42,12 @@ static void column_set_content_size(void* d, const SDL_Rect* rect) {
     // allocate space
     SDL_Rect sz = *rect;
     for (size_t i = 0; i < data->list_len; i++) {
-        SDLNW_SizeResponse r = SDLNW_Widget_GetRequestedSize(data->list[i], (SDLNW_SizeRequest) {.total_pixels_avaliable_width = rect->w});
+        SDLNW_SizeResponse r = SDLNW_GetWidgetRequestedSize(data->list[i], (SDLNW_SizeRequest) {.total_pixels_avaliable_width = rect->w});
 
         int pixels = r.height.pixels + r.height.shares * height_per_share;
 
         sz.h = pixels;
-        SDLNW_Widget_SetNetSize(data->list[i], &sz);
+        SDLNW_SetWidgetNetSize(data->list[i], &sz);
         sz.y += pixels;
     }
 }
@@ -63,7 +63,7 @@ static SDL_SystemCursor column_appropriate_cursor(SDLNW_Widget* w, int x, int y)
     for (size_t i = 0; i < data->list_len; i++) {
         SDLNW_Widget* w = data->list[i];
         if (is_point_within_rect(x, y, &w->net_size)) {
-            cursor = max_cursor(cursor, SDLNW_Widget_GetAppropriateCursor(w, x, y));
+            cursor = max_cursor(cursor, SDLNW_GetAppropriateCursorForWidget(w, x, y));
         }
     }
 
@@ -82,7 +82,7 @@ static SDLNW_SizeResponse column_get_requested_size(SDLNW_Widget* w, SDLNW_SizeR
     SDLNW_SizeResponse response = (SDLNW_SizeResponse) {0};
 
     for (size_t i = 0; i < len; i++) {
-        SDLNW_SizeResponse r = SDLNW_Widget_GetRequestedSize(data->list[i], request);
+        SDLNW_SizeResponse r = SDLNW_GetWidgetRequestedSize(data->list[i], request);
 
         // height is cumulative
         response.height.pixels += r.height.pixels;
@@ -100,7 +100,7 @@ static void column_destroy(SDLNW_Widget* w) {
     struct column_data* data = w->data;
 
     for (size_t i = 0; i < data->list_len; i++) {
-        SDLNW_Widget_Destroy(data->list[i]);
+        SDLNW_DestroyWidget(data->list[i]);
     }
 
     __sdlnw_free(data->list);
@@ -116,7 +116,7 @@ static void column_trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType
     struct column_data* data = widget->data;
 
     for (size_t i = 0; i < data->list_len; i++) {
-        SDLNW_Widget_TrickleDownEvent(data->list[i], type, event_meta, allow_passthrough);
+        SDLNW_TrickleDownEvent(data->list[i], type, event_meta, allow_passthrough);
     }
 }
 

@@ -1,8 +1,8 @@
 #include "SDLNW.h"
-#include "internal_helpers.h"
+#include "SDLNWInternal.h"
 
 /*
-    This is half implemented, will need to wait for a major refactor to SDLNW_Widget_GetRequestedSize and corresponding vtable.
+    This is half implemented, will need to wait for a major refactor to SDLNW_GetWidgetRequestedSize and corresponding vtable.
 */
 
 struct centre_data {
@@ -12,13 +12,13 @@ struct centre_data {
 static void centre_draw_content(void* d, const SDL_Rect* content_size, SDL_Renderer* renderer) {
     (void)content_size;
     struct centre_data* data = d;
-    SDLNW_Widget_Draw(data->child, renderer);
+    SDLNW_DrawWidget(data->child, renderer);
 }
 
 static void centre_set_content_size(void* d, const SDL_Rect* rect) {
     struct centre_data* data = d;
 
-    SDLNW_SizeResponse sz_res = SDLNW_Widget_GetRequestedSize(data->child, (SDLNW_SizeRequest){.total_pixels_avaliable_width = rect->w, .total_pixels_avaliable_height = rect->h});
+    SDLNW_SizeResponse sz_res = SDLNW_GetWidgetRequestedSize(data->child, (SDLNW_SizeRequest){.total_pixels_avaliable_width = rect->w, .total_pixels_avaliable_height = rect->h});
 
     const int requested_height = sz_res.height.pixels;
     const int requested_width = sz_res.width.pixels;
@@ -34,18 +34,18 @@ static void centre_set_content_size(void* d, const SDL_Rect* rect) {
         .w = requested_width
     };
 
-    SDLNW_Widget_SetNetSize(data->child, &child_sz);
+    SDLNW_SetWidgetNetSize(data->child, &child_sz);
 }
 
 static SDL_SystemCursor centre_appropriate_cursor(SDLNW_Widget* w, int x, int y) {
     struct centre_data* data = w->data;
 
-    return SDLNW_Widget_GetAppropriateCursor(data->child, x, y);
+    return SDLNW_GetAppropriateCursorForWidget(data->child, x, y);
 }
 
 static void centre_destroy(SDLNW_Widget* w) {
     struct centre_data* data = w->data;
-    SDLNW_Widget_Destroy(data->child);
+    SDLNW_DestroyWidget(data->child);
 
     __sdlnw_free(w->data);
     w->data = NULL;
@@ -54,12 +54,12 @@ static void centre_destroy(SDLNW_Widget* w) {
 
 static SDLNW_SizeResponse centre_get_requested_size(SDLNW_Widget* w, SDLNW_SizeRequest request) {
     struct centre_data* data = w->data;
-    return SDLNW_Widget_GetRequestedSize(data->child, request);
+    return SDLNW_GetWidgetRequestedSize(data->child, request);
 }
 
 static void centre_trickle_down_event(SDLNW_Widget* w, enum SDLNW_EventType type, void* event_meta, bool* allow_passthrough) {
     struct centre_data* data = w->data;
-    SDLNW_Widget_TrickleDownEvent(data->child, type, event_meta, allow_passthrough);
+    SDLNW_TrickleDownEvent(data->child, type, event_meta, allow_passthrough);
 }
 
 

@@ -1,5 +1,5 @@
 #include "../include/SDLNW.h"
-#include "internal_helpers.h"
+#include "SDLNWInternal.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_events.h>
 #include <SDL2/SDL_mouse.h>
@@ -10,45 +10,56 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-bool SDLNW_CornerRadius_comp(const SDLNW_CornerRadius* a, const SDLNW_CornerRadius* b) {
+bool SDLNW_CompareCornerRadius(const SDLNW_CornerRadius* a, const SDLNW_CornerRadius* b) {
     return a->bottom_left == b->bottom_left &&
         a->bottom_right == b->bottom_right &&
         a->top_left == b->top_left &&
         a->top_right == b->top_right;
 }
 
-void SDLNW_Widget_Draw(SDLNW_Widget* w, SDL_Renderer* renderer) {
+void SDLNW_DrawWidget(SDLNW_Widget* w, SDL_Renderer* renderer) {
     if (w->background) {
-        SDLNW_Background_render(w->background, renderer, &w->net_size, &w->radius);
+        SDLNW_RenderBackground(w->background, renderer, &w->content_and_padding_size, &w->radius);
     }
 
     if (w->border) {
-        SDLNW_Border_draw(w->border, renderer, &w->net_size, &w->radius);
+        SDLNW_DrawBorder(w->border, renderer, &w->content_padding_and_border_size, &w->radius);
     }
 
     w->vtable.draw_content(w->data, &w->content_size, renderer);
 }
 
-void SDLNW_Widget_SetNetSize(SDLNW_Widget* w, const SDL_Rect* rect) {
+void SDLNW_SetWidgetNetSize(SDLNW_Widget* w, const SDL_Rect* rect) {
     w->net_size = *rect;
-    w->content_size = __sdlnw_sub_inset(rect, &w->padding);
 
+    w->content_padding_and_border_size = __sdlnw_sub_inset(rect, &w->margin);
+
+    SDLNW_Insets border_inset = {0};
+    if (w->border) {
+        border_inset.top = w->border->border_width;
+        border_inset.bottom = w->border->border_width;
+        border_inset.left = w->border->border_width;
+        border_inset.right = w->border->border_width;
+    }
+    w->content_and_padding_size = __sdlnw_sub_inset(&w->content_padding_and_border_size, &border_inset);
+
+    w->content_size = __sdlnw_sub_inset(&w->content_and_padding_size, &w->padding);
 
     w->vtable.set_content_size(w->data, &w->content_size);
 }
 
-void SDLNW_Widget_Click(SDLNW_Widget* w, int x, int y, Uint8 clicks) {
-    SDLNW_Event_Click event = (SDLNW_Event_Click){
+void SDLNW_ClickWidget(SDLNW_Widget* w, int x, int y, Uint8 clicks) {
+    SDLNW_ClickEvent event = (SDLNW_ClickEvent){
         .x = x, .y = y, .clicks = clicks
     };
 
-    SDLNW_Widget_TrickleDownEvent(w, SDLNW_EventType_Click, &event, NULL);
+    SDLNW_TrickleDownEvent(w, SDLNW_EventType_Click, &event, NULL);
 }
 
-void SDLNW_Widget_Drag(SDLNW_Widget* w, int mouse_x_start, int mouse_y_start, int mouse_x, int mouse_y, bool still_down) {
-    SDLNW_Event_Drag event = {.origin_x = mouse_x_start, .origin_y = mouse_y_start, .mouse_x = mouse_x, .mouse_y = mouse_y, .still_down = still_down};
+void SDLNW_DragWidget(SDLNW_Widget* w, int mouse_x_start, int mouse_y_start, int mouse_x, int mouse_y, bool still_down) {
+    SDLNW_DragEvent event = {.origin_x = mouse_x_start, .origin_y = mouse_y_start, .mouse_x = mouse_x, .mouse_y = mouse_y, .still_down = still_down};
 
-    SDLNW_Widget_TrickleDownEvent(w, SDLNW_EventType_MouseDrag, &event, NULL);
+    SDLNW_TrickleDownEvent(w, SDLNW_EventType_MouseDrag, &event, NULL);
 }
 
 struct on_destroy_pair {
@@ -62,13 +73,13 @@ struct on_destroy_list {
     struct on_destroy_pair* arr;
 };
 
-void SDLNW_Widget_Destroy(SDLNW_Widget* w) {
+void SDLNW_DestroyWidget(SDLNW_Widget* w) {
     if (w->border) {
-        SDLNW_Border_destroy(w->border);
+        SDLNW_DestroyBorder(w->border);
     }
 
     if (w->background) {
-        SDLNW_Background_destroy(w->background);
+        SDLNW_DestroyBackground(w->background);
     }
 
     struct on_destroy_list* lst = w->on_destroy_list;
@@ -85,7 +96,7 @@ void SDLNW_Widget_Destroy(SDLNW_Widget* w) {
     __sdlnw_free(w);
 }
 
-void SDLNW_Widget_AddOnDestroy(SDLNW_Widget* w, void* data, void(*cb)(void* data)) {
+void SDLNW_AddOnWidgetDestroyCb(SDLNW_Widget* w, void* data, void(*cb)(void* data)) {
     struct on_destroy_list* lst = w->on_destroy_list;
 
     // lazy allocate
@@ -113,31 +124,47 @@ void SDLNW_Widget_AddOnDestroy(SDLNW_Widget* w, void* data, void(*cb)(void* data
     lst->len += 1;
 }
 
-SDL_SystemCursor SDLNW_Widget_GetAppropriateCursor(SDLNW_Widget* w, int x, int y) {
+SDL_SystemCursor SDLNW_GetAppropriateCursorForWidget(SDLNW_Widget* w, int x, int y) {
     return w->vtable.appropriate_cursor(w, x, y);
 }
 
-SDLNW_SizeResponse SDLNW_Widget_GetRequestedSize(SDLNW_Widget* w, SDLNW_SizeRequest request) {
-    int padding_width = w->padding.left + w->padding.right;
-    int padding_height = w->padding.top + w->padding.bottom;
+SDLNW_SizeResponse SDLNW_GetWidgetRequestedSize(SDLNW_Widget* w, SDLNW_SizeRequest request) {
+    // padding
+    int delta_width = w->padding.left + w->padding.right;
+    int delta_height = w->padding.top + w->padding.bottom;
 
-    // subtract off padding
-    if (request.total_pixels_avaliable_width) {
-        request.total_pixels_avaliable_width -= padding_width;
+    // border
+    if (w->border) {
+        int width = 2 * w->border->border_width;
+        delta_width += width;
+        delta_height += width;
     }
-    if (request.total_pixels_avaliable_height) {
-        request.total_pixels_avaliable_height -= padding_height;
+
+    // margin
+    delta_width += (w->margin.left + w->margin.right);
+    delta_height += (w->margin.top + w->margin.bottom);
+
+    request.total_pixels_avaliable_width -= delta_width;
+    request.total_pixels_avaliable_height -= delta_height;
+
+    // correct for negatives
+    if (request.total_pixels_avaliable_width < 0) {
+        request.total_pixels_avaliable_width = 0;
+    }
+
+    if (request.total_pixels_avaliable_height < 0) {
+        request.total_pixels_avaliable_height = 0;
     }
 
     SDLNW_SizeResponse r = w->vtable.get_requested_size(w, request);
 
-    r.width.pixels += padding_width;
-    r.height.pixels += padding_height;
+    r.width.pixels += delta_width;
+    r.height.pixels += delta_height;
 
     return r;
 }
 
-void SDLNW_Widget_TrickleDownEvent(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, bool* allow_passthrough) {
+void SDLNW_TrickleDownEvent(SDLNW_Widget* widget, enum SDLNW_EventType type, void* event_meta, bool* allow_passthrough) {
     bool allow = true;
 
     if (allow_passthrough == NULL) {
@@ -152,13 +179,13 @@ void SDLNW_Widget_TrickleDownEvent(SDLNW_Widget* widget, enum SDLNW_EventType ty
         switch(type) {
             case SDLNW_EventType_Click:
                 {
-                    SDLNW_Event_Click* e = event_meta;
+                    SDLNW_ClickEvent* e = event_meta;
                     widget->vtable.click(widget, e, allow_passthrough);
                 }
                 break;
             case SDLNW_EventType_MouseScroll:
                 {
-                    SDLNW_Event_MouseWheel* e = event_meta;
+                    SDLNW_MouseWheelEvent* e = event_meta;
                     if (is_point_within_rect(e->x, e->y, &widget->net_size)) {
                         widget->vtable.mouse_scroll(widget, e, allow_passthrough);
                     }
@@ -167,7 +194,7 @@ void SDLNW_Widget_TrickleDownEvent(SDLNW_Widget* widget, enum SDLNW_EventType ty
                 break;
             case SDLNW_EventType_MouseDrag:
                 {
-                    SDLNW_Event_Drag* e = event_meta;
+                    SDLNW_DragEvent* e = event_meta;
                     if (is_point_within_rect(e->mouse_x, e->mouse_y, &widget->net_size) || is_point_within_rect(e->origin_x, e->origin_y, &widget->net_size)) {
                         widget->vtable.drag(widget, event_meta, allow_passthrough);
                     }
@@ -175,7 +202,7 @@ void SDLNW_Widget_TrickleDownEvent(SDLNW_Widget* widget, enum SDLNW_EventType ty
                 break;
             case SDLNW_EventType_MouseMove:
                 {
-                    SDLNW_Event_MouseMove* e = event_meta;
+                    SDLNW_MouseMotionEvent* e = event_meta;
 
                     bool is_within = is_point_within_rect(e->current_x, e->current_y, &widget->net_size);
                     bool was_within = is_point_within_rect(e->last_x, e->last_y, &widget->net_size);
@@ -189,50 +216,68 @@ void SDLNW_Widget_TrickleDownEvent(SDLNW_Widget* widget, enum SDLNW_EventType ty
                 break;
             case SDLNW_EventType_KeyUp:
                 {
-                    SDLNW_Event_KeyUp* e = event_meta;
+                    SDLNW_KeyUpEvent* e = event_meta;
                     widget->vtable.on_key_up(widget, e, allow_passthrough);
                 }
                 break;
             case SDLNW_EventType_TextInput:
                 {
-                    SDLNW_Event_TextInput*e = event_meta;
+                    SDLNW_TextInputEvent*e = event_meta;
                     widget->vtable.on_text_input(widget, e, allow_passthrough);
                 }
         }
     }
 }
 
-void SDLNW_Widget_MouseScroll(SDLNW_Widget* w, int x, int y, int delta_x, int delta_y) {
-    SDLNW_Event_MouseWheel event = (SDLNW_Event_MouseWheel){
+void SDLNW_MouseScrollWidget(SDLNW_Widget* w, int x, int y, int delta_x, int delta_y) {
+    SDLNW_MouseWheelEvent event = (SDLNW_MouseWheelEvent){
         .x = x, .y = y, .delta_x = delta_x, .delta_y = delta_y
     };
 
-    SDLNW_Widget_TrickleDownEvent(w, SDLNW_EventType_MouseScroll, &event, NULL);
+    SDLNW_TrickleDownEvent(w, SDLNW_EventType_MouseScroll, &event, NULL);
 }
 
-void SDLNW_Widget_MouseMotion(SDLNW_Widget* w, int x, int y, int last_x, int last_y) {
-    SDLNW_Event_MouseMove event = (SDLNW_Event_MouseMove) {
+void SDLNW_MouseMotionWidget(SDLNW_Widget* w, int x, int y, int last_x, int last_y) {
+    SDLNW_MouseMotionEvent event = (SDLNW_MouseMotionEvent) {
         .current_x = x,
         .current_y = y,
         .last_x = last_x,
         .last_y = last_y
     };
 
-    SDLNW_Widget_TrickleDownEvent(w, SDLNW_EventType_MouseMove, &event, NULL);
+    SDLNW_TrickleDownEvent(w, SDLNW_EventType_MouseMove, &event, NULL);
 }
 
-void SDLNW_Widget_add_border(SDLNW_Widget* w, SDLNW_Border* border) {
+void SDLNW_SetWidgetBorder(SDLNW_Widget* w, SDLNW_Border* border) {
     if (w->border) {
-        SDLNW_Border_destroy(w->border);
+        SDLNW_DestroyBorder(w->border);
     }
 
     w->border = border;
 }
 
-void SDLNW_Widget_set_corner_radius(SDLNW_Widget* w, SDLNW_CornerRadius radius) {
+void SDLNW_SetWidgetCornerRadius(SDLNW_Widget* w, SDLNW_CornerRadius radius) {
     w->radius = radius;
 }
 
-void SDLNW_Widget_set_padding(SDLNW_Widget* w, SDLNW_Insets insets) {
+void SDLNW_SetWidgetPadding(SDLNW_Widget* w, SDLNW_Insets insets) {
     w->padding = insets;
+    SDLNW_SetWidgetNetSize(w, &w->net_size);
+}
+
+void SDLNW_SetWidgetMargin(SDLNW_Widget* w, SDLNW_Insets insets) {
+    w->margin = insets;
+    SDLNW_SetWidgetNetSize(w, &w->net_size);
+}
+
+void SDLNW_SetWidgetBackground(SDLNW_Widget* w, SDLNW_Background* bg) {
+    if (w->background) {
+        SDLNW_DestroyBackground(w->background);
+    }
+
+    w->background = bg;
+}
+
+SDLNW_Widget* SDLNW_CreateEmptyWidget(void) {
+    return create_default_widget();
 }

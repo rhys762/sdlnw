@@ -1,5 +1,5 @@
 #include "../include/SDLNW.h"
-#include "../include/internal_helpers.h"
+#include "../include/SDLNWInternal.h"
 
 struct zstack_data {
     SDLNW_Widget** list;
@@ -11,7 +11,7 @@ static void zstack_draw_content(void* d, const SDL_Rect* content_size, SDL_Rende
     struct zstack_data* data = d;
 
     for (size_t i = 0; i < data->list_len; i++) {
-        SDLNW_Widget_Draw(data->list[i], renderer);
+        SDLNW_DrawWidget(data->list[i], renderer);
     }
 }
 
@@ -20,7 +20,7 @@ static void zstack_set_content_size(void* d, const SDL_Rect* rect) {
     struct zstack_data* data = d;
 
     for (size_t i = 0; i < data->list_len; i++) {
-        SDLNW_Widget_SetNetSize(data->list[i], rect);
+        SDLNW_SetWidgetNetSize(data->list[i], rect);
     }
 }
 
@@ -34,7 +34,7 @@ static SDL_SystemCursor zstack_appropriate_cursor(SDLNW_Widget* w, int x, int y)
 
     for (size_t i = 0; i < data->list_len; i++) {
         SDLNW_Widget* w = data->list[i];
-        cursor = max_cursor(cursor, SDLNW_Widget_GetAppropriateCursor(w, x, y));
+        cursor = max_cursor(cursor, SDLNW_GetAppropriateCursorForWidget(w, x, y));
     }
 
     return cursor;
@@ -44,7 +44,7 @@ static void zstack_destroy(SDLNW_Widget* w) {
     struct zstack_data* data = w->data;
 
     for (size_t i = 0; i < data->list_len; i++) {
-        SDLNW_Widget_Destroy(data->list[i]);
+        SDLNW_DestroyWidget(data->list[i]);
     }
 
     __sdlnw_free(data->list);
@@ -65,7 +65,7 @@ static SDLNW_SizeResponse zstack_get_requested_size(SDLNW_Widget* w, SDLNW_SizeR
 
     // take max
     for (size_t i = 0; i < data->list_len; i++) {
-        SDLNW_SizeResponse res = SDLNW_Widget_GetRequestedSize(data->list[i], request);
+        SDLNW_SizeResponse res = SDLNW_GetWidgetRequestedSize(data->list[i], request);
 
         response.width.pixels = max(response.width.pixels, res.width.pixels);
         response.width.shares = max(response.width.shares, res.width.shares);
@@ -86,7 +86,7 @@ static void zstack_trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType
     size_t i = data->list_len - 1;
 
     while(true) {
-        SDLNW_Widget_TrickleDownEvent(data->list[i], type, event_meta, allow_passthrough);
+        SDLNW_TrickleDownEvent(data->list[i], type, event_meta, allow_passthrough);
         if (i) {
             i--;
         } else {

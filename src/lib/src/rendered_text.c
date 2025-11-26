@@ -1,7 +1,8 @@
-#include "internal_helpers.h"
+#include "SDLNWInternal.h"
 #include <SDL2/SDL_blendmode.h>
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL_surface.h>
+#include <SDL2/SDL_ttf.h>
 #include <assert.h>
 
 static void  destroy_rendered_char(__sdlnw_RenderedChar* c) {
@@ -18,13 +19,14 @@ static void clear_chars(__sdlnw_RenderedText* rt) {
     rt->chars_len = 0;
 }
 
-void __sdlnw_RenderedText_init(__sdlnw_RenderedText* rt, SDLNW_Font* font) {
+void __sdlnw_RenderedText_init(__sdlnw_RenderedText* rt, SDLNW_Font* font, SDL_Colour c) {
     *rt = (__sdlnw_RenderedText) {
         .font = font
     };
 
     rt->chars_cap = 10;
     rt->chars = __sdlnw_malloc(rt->chars_cap * sizeof(__sdlnw_RenderedChar));
+    rt->colour = c;
 }
 
 void __sdlnw_RenderedText_destroy(__sdlnw_RenderedText* rt) {
@@ -67,8 +69,6 @@ void __sdlnw_RenderedText_set_text(__sdlnw_RenderedText* rt, const char* text, i
         '\0'
     };
 
-    // TODO
-    SDL_Color fg = {0x00, 0x00, 0x00, 0xFF};
     SDL_Rect dest = {0};
 
     for (size_t i = 0; i < len; i++) {
@@ -89,7 +89,7 @@ void __sdlnw_RenderedText_set_text(__sdlnw_RenderedText* rt, const char* text, i
             continue;
         }
 
-        SDL_Surface* surface = TTF_RenderText_Solid(rt->font->font, str, fg);
+        SDL_Surface* surface = TTF_RenderText_Blended(rt->font->font, str, rt->colour);
 
         dest.w = surface->w;
         dest.h = surface->h;

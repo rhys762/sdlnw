@@ -3,7 +3,7 @@
 #include <assert.h>
 #include <math.h>
 
-#include "internal_helpers.h"
+#include "SDLNWInternal.h"
 
 // for f(x)
 typedef struct {
@@ -271,5 +271,5 @@ void __sdlnw_int_spline_rounded_box_destroy(__sdlnw_int_spline_rounded_box* box)
 }
 
 bool __sdlnw_int_spline_rounded_box_within_bounds(const __sdlnw_int_spline_rounded_box* box, int x, int y) {
-    return y >= __sdlnw_int_spline_compute(box->top_line, x)  && y <= __sdlnw_int_spline_compute(box->bottom_line, x);
+    return y >= __sdlnw_int_spline_compute(box->top_line, x)  && y < __sdlnw_int_spline_compute(box->bottom_line, x);
 }

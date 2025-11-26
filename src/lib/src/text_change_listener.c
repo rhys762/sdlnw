@@ -1,4 +1,4 @@
-#include "internal_helpers.h"
+#include "SDLNWInternal.h"
 
 #include "SDLNW.h"
 

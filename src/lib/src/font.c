@@ -1,9 +1,9 @@
 #include "../include/SDLNW.h"
-#include "internal_helpers.h"
+#include "SDLNWInternal.h"
 #include "SDL2/SDL_ttf.h"
 
-SDLNW_Font* SDLNW_Font_Create(const char* path, int ptsize) {
-    TTF_Font* f = TTF_OpenFont(path, ptsize); 
+SDLNW_Font* SDLNW_CreateFont(const char* path, int ptsize) {
+    TTF_Font* f = TTF_OpenFont(path, ptsize);
 
     if (f == NULL) {
         printf("ttf failure: %s\n", TTF_GetError());
@@ -18,7 +18,7 @@ SDLNW_Font* SDLNW_Font_Create(const char* path, int ptsize) {
     return font;
 }
 
-void SDLNW_Font_Destroy(SDLNW_Font* font) {
+void SDLNW_DestroyFont(SDLNW_Font* font) {
     TTF_CloseFont(font->font);
     font->font = NULL;
 

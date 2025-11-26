@@ -1,5 +1,5 @@
 #include "../include/SDLNW.h"
-#include "../include/internal_helpers.h"
+#include "../include/SDLNWInternal.h"
 #include <SDL2/SDL_render.h>
 
 static void placeholder_draw_content(void* d, const SDL_Rect* content_size, SDL_Renderer* renderer) {

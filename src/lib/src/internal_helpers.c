@@ -1,4 +1,4 @@
-#include "../include/internal_helpers.h"
+#include "../include/SDLNWInternal.h"
 #include "../include/SDLNW.h"
 
 static void base_draw_content(void* data, const SDL_Rect* content_size, SDL_Renderer* renderer) {
@@ -12,7 +12,7 @@ static void base_set_content_size(void* data, const SDL_Rect* rect) {
     (void)rect;
 }
 
-static void base_click(SDLNW_Widget* w, SDLNW_Event_Click* event, bool* allow_passthrough) {
+static void base_click(SDLNW_Widget* w, SDLNW_ClickEvent* event, bool* allow_passthrough) {
     (void)w; // unused
     (void)event; // unused
     (void)allow_passthrough; // unused
@@ -46,43 +46,43 @@ static void base_trickle_down_event(SDLNW_Widget* widget, enum SDLNW_EventType t
     (void)allow_passthrough; // unused
 }
 
-static void base_mouse_scroll(SDLNW_Widget* widget, SDLNW_Event_MouseWheel* event, bool* allow_passthrough) {
+static void base_mouse_scroll(SDLNW_Widget* widget, SDLNW_MouseWheelEvent* event, bool* allow_passthrough) {
     (void)widget; // unused
     (void)event; // unused
     (void)allow_passthrough; // unused
 }
 
-static void base_drag(SDLNW_Widget* widget, SDLNW_Event_Drag* event, bool* allow_passthrough) {
+static void base_drag(SDLNW_Widget* widget, SDLNW_DragEvent* event, bool* allow_passthrough) {
     (void)widget; // ununsed
     (void)event; // ununsed
     (void)allow_passthrough; // ununsed
 }
 
-static void base_on_hover_on(SDLNW_Widget* widget, SDLNW_Event_MouseMove* event, bool* allow_passthrough) {
+static void base_on_hover_on(SDLNW_Widget* widget, SDLNW_MouseMotionEvent* event, bool* allow_passthrough) {
     (void)widget;
     (void)event;
     (void)allow_passthrough;
 }
 
-static void base_on_hover_off(SDLNW_Widget* widget, SDLNW_Event_MouseMove* event, bool* allow_passthrough) {
+static void base_on_hover_off(SDLNW_Widget* widget, SDLNW_MouseMotionEvent* event, bool* allow_passthrough) {
     (void)widget;
     (void)event;
     (void)allow_passthrough;
 }
 
-static void base_on_key_up(SDLNW_Widget* widget, SDLNW_Event_KeyUp* event, bool* allow_passthrough) {
+static void base_on_key_up(SDLNW_Widget* widget, SDLNW_KeyUpEvent* event, bool* allow_passthrough) {
     (void)widget;
     (void)event;
     (void)allow_passthrough;
 }
 
-static void base_on_text_input(SDLNW_Widget* widget, SDLNW_Event_TextInput* event, bool* allow_passthrough) {
+static void base_on_text_input(SDLNW_Widget* widget, SDLNW_TextInputEvent* event, bool* allow_passthrough) {
     (void)widget;
     (void)event;
     (void)allow_passthrough;
 }
 
-static void init_default_vtable(SDLNW_Widget_VTable* table) {
+static void init_default_vtable(SDLNW_WidgetVTable* table) {
     table->draw_content = base_draw_content;
     table->set_content_size = base_set_content_size;
     table->click = base_click;
@@ -193,7 +193,7 @@ void __sdlnw_debug_free(void *ptr) {
     free(ptr);
 }
 
-void SDLNW_debug_report_leaks(void) {
+void SDLNW_ReportLeaks(void) {
     MemEntry *curr = mem_list;
     while (curr) {
         printf("Memory leak: %p of %zu bytes allocated at %s:%d\n",
@@ -220,6 +220,14 @@ SDL_Rect __sdlnw_sub_inset(const SDL_Rect* rect, const SDLNW_Insets* inset) {
     out.y = rect->y + inset->top;
     out.w = rect->w - (inset->left + inset->right);
     out.h = rect->h - (inset->top + inset->bottom);
+
+    if (out.w < 0) {
+        out.w = 0;
+    }
+
+    if (out.h < 0) {
+        out.h = 0;
+    }
 
     return out;
 }

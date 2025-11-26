@@ -8,6 +8,7 @@ endif
 # sdl2
 sdl2_dep = dependency('sdl2')
 ttf_dep = dependency('SDL2_ttf')
+image_dep = dependency('SDL2_image')
 
 # munit
 munit_proj = subproject('munit')
@@ -26,6 +27,7 @@ lib_src = files(
   'src/lib/src/gesture.c',
   'src/lib/src/internal_helpers.c',
   'src/lib/src/placeholder.c',
+  'src/lib/src/prefab/button.c',
   'src/lib/src/prefab/label.c',
   'src/lib/src/rendered_text.c',
   'src/lib/src/router.c',
@@ -63,8 +65,6 @@ m_dep = cc.find_library('m', required: false)
 executable(
   'example_0_todo',
   'src/examples/example_0_todo/main.c',
-  'src/examples/example_0_todo/button.c',
-  'src/examples/example_0_todo/misc.c',
   dependencies: [sdl2_dep, ttf_dep, sdlnw_dep, m_dep],
 )
 
@@ -74,9 +74,14 @@ if not meson.is_subproject()
   e = executable(
     'run_tests',
     'src/test/main.c',
+    'src/test/test_misc.c',
     'src/test/test_text_controller.c',
+    'src/test/test_placeholder.c',
+    'src/test/test_column.c',
+    'src/test/test_composite.c',
+    'src/test/test_text.c',
     lib_src,
-    dependencies: [sdl2_dep, ttf_dep, sdlnw_dep, munit_dep, m_dep],
+    dependencies: [sdl2_dep, ttf_dep, sdlnw_dep, munit_dep, m_dep, image_dep],
   )
 
   test('Unit Tests', e)

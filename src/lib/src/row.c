@@ -1,5 +1,5 @@
 #include "SDLNW.h"
-#include "internal_helpers.h"
+#include "SDLNWInternal.h"
 
 struct row_widget_data {
     SDLNW_Widget** list;
@@ -11,7 +11,7 @@ static void row_draw_content(void* d, const SDL_Rect* content_size, SDL_Renderer
     struct row_widget_data* data = d;
 
     for (size_t i = 0; i < data->list_len; i++) {
-        SDLNW_Widget_Draw(data->list[i], renderer);
+        SDLNW_DrawWidget(data->list[i], renderer);
     }
 }
 
@@ -25,7 +25,7 @@ static void row_set_content_size(void* d, const SDL_Rect* rect) {
 
     // TOOD cache requested size? maybe
     for (size_t i = 0; i < data->list_len; i++) {
-        SDLNW_SizeResponse r = SDLNW_Widget_GetRequestedSize(data->list[i], (SDLNW_SizeRequest) {.total_pixels_avaliable_height = rect->h});
+        SDLNW_SizeResponse r = SDLNW_GetWidgetRequestedSize(data->list[i], (SDLNW_SizeRequest) {.total_pixels_avaliable_height = rect->h});
 
         allocated_pixels += r.width.pixels;
         shares += r.width.shares;
@@ -41,12 +41,12 @@ static void row_set_content_size(void* d, const SDL_Rect* rect) {
     // allocate space
     SDL_Rect sz = *rect;
     for (size_t i = 0; i < data->list_len; i++) {
-        SDLNW_SizeResponse r = SDLNW_Widget_GetRequestedSize(data->list[i], (SDLNW_SizeRequest) {.total_pixels_avaliable_height = rect->h});
+        SDLNW_SizeResponse r = SDLNW_GetWidgetRequestedSize(data->list[i], (SDLNW_SizeRequest) {.total_pixels_avaliable_height = rect->h});
 
         int pixels = r.width.pixels + r.width.shares * width_per_share;
 
         sz.w = pixels;
-        SDLNW_Widget_SetNetSize(data->list[i], &sz);
+        SDLNW_SetWidgetNetSize(data->list[i], &sz);
         sz.x += pixels;
     }
 }
@@ -62,7 +62,7 @@ static SDL_SystemCursor row_widget_appropriate_cursor(SDLNW_Widget* w, int x, in
     for (size_t i = 0; i < data->list_len; i++) {
         SDLNW_Widget* w = data->list[i];
         if (is_point_within_rect(x, y, &w->net_size)) {
-            cursor = max_cursor(cursor, SDLNW_Widget_GetAppropriateCursor(w, x, y));
+            cursor = max_cursor(cursor, SDLNW_GetAppropriateCursorForWidget(w, x, y));
         }
     }
 
@@ -81,7 +81,7 @@ static SDLNW_SizeResponse row_width_get_requested_size(SDLNW_Widget* w, SDLNW_Si
     SDLNW_SizeResponse response = (SDLNW_SizeResponse) {0};
 
     for (size_t i = 0; i < len; i++) {
-        SDLNW_SizeResponse r = SDLNW_Widget_GetRequestedSize(data->list[i], request);
+        SDLNW_SizeResponse r = SDLNW_GetWidgetRequestedSize(data->list[i], request);
 
         // width is cumulative
         response.width.pixels += r.width.pixels;
@@ -99,7 +99,7 @@ static void row_widget_destroy(SDLNW_Widget* w) {
     struct row_widget_data* data = w->data;
 
     for (size_t i = 0; i < data->list_len; i++) {
-        SDLNW_Widget_Destroy(data->list[i]);
+        SDLNW_DestroyWidget(data->list[i]);
     }
 
     __sdlnw_free(data->list);
@@ -115,7 +115,7 @@ static void row_widget_trickle_down_event(SDLNW_Widget* widget, enum SDLNW_Event
     struct row_widget_data* data = widget->data;
 
     for (size_t i = 0; i < data->list_len; i++) {
-        SDLNW_Widget_TrickleDownEvent(data->list[i], type, event_meta, allow_passthrough);
+        SDLNW_TrickleDownEvent(data->list[i], type, event_meta, allow_passthrough);
     }
 }
 

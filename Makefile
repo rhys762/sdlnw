@@ -20,8 +20,10 @@ font:
 build:
 	meson compile -C build
 
+# --no-fork is required, X11 errors, unsure exactly why
+# tests are almost instant anyway
 test: build
 	./scripts/clean_coverage.bash
-	meson test -v -C build
+	cd build && ./run_tests --no-fork
 
 .PHONY: setup mcheck coverage font test build

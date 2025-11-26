@@ -91,7 +91,7 @@ Widgets that accept pointers to some kind of state or otherwise do NOT take owne
 
 ```c
 struct some_struct s = {0};
-SDLNW_Widget* button = SDLNW_CreateGestureDetectorWidget(child_widget, (SDLNW_GestureDetectorWidget_Options){.data=&s, .on_click=on_click});
+SDLNW_Widget* button = SDLNW_CreateGestureDetectorWidget(child_widget, (SDLNW_GestureDetectorWidgetOptions){.data=&s, .on_click=on_click});
 // OK, button has a pointer to a local variable, but will not try to free
 ```
 
@@ -100,9 +100,9 @@ However, in the case that you do want such a pointer cleaned up, widgets can be 
 ```c
 struct some_struct* s = malloc(sizeof(struct some_struct));
 *s = (struct some_struct){0};
-SDLNW_Widget* button = SDLNW_CreateGestureDetectorWidget(child_widget, (SDLNW_GestureDetectorWidget_Options){.data=&s, .on_click=on_click});
+SDLNW_Widget* button = SDLNW_CreateGestureDetectorWidget(child_widget, (SDLNW_GestureDetectorWidgetOptions){.data=&s, .on_click=on_click});
 // button should free s when it is destroyed:
-SDLNW_Widget_AddOnDestroy(button, s, free);
+SDLNW_AddOnWidgetDestroyCb(button, s, free);
 ```
 
 # Integration
