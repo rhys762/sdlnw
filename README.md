@@ -8,7 +8,7 @@ SDL Nested Widgets is intended to be a small library for managing simple ui elem
 
 # Requirements
 
-- SDL2, SDL2_ttf development libraries.
+- SDL2, SDL2_ttf, SDL2_image development libraries.
 - meson (and toolchain, see https://mesonbuild.com/Quick-guide.html)
 - typical linux tools, including but not limited to: make, wget, unzip, a c compiler
 

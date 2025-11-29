@@ -283,7 +283,7 @@ int main(int argc, char** argv) {
     SDLNW_WidgetWindowSet_CreateWidgetWindow(widget_window_set, widget, options);
 
     size_t frames = 0;
-    Uint32 last_t = SDL_GetTicks(), acc_t;
+    Uint32 last_t = SDL_GetTicks(), acc_t = 0;
 
     while (SDLNW_CreateWidgetWindowSet_get_number_of_windows(widget_window_set)) {
         SDLNW_CreateWidgetWindowSet_step(widget_window_set);
