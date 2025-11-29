@@ -1,5 +1,4 @@
 #include <munit.h>
-#include <wchar.h>
 #include "SDL_clipboard.h"
 #include "SDL_keyboard.h"
 #include "SDL_keycode.h"
@@ -12,7 +11,7 @@
 #define BLACK (SDL_Color) {.a = 0xFF}
 #define LOREM "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
 
-const SDL_Rect SIZE = {0, 0, 300, 300};
+static const SDL_Rect SIZE = {0, 0, 300, 300};
 
 static MunitResult test_Text_draw(const MunitParameter params[], void *user_data_or_fixture) {
     (void)params;

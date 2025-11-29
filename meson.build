@@ -80,6 +80,8 @@ if not meson.is_subproject()
     'src/test/test_column.c',
     'src/test/test_composite.c',
     'src/test/test_text.c',
+    'src/test/test_zstack.c',
+    'src/test/test_border.c',
     lib_src,
     dependencies: [sdl2_dep, ttf_dep, sdlnw_dep, munit_dep, m_dep, image_dep],
   )

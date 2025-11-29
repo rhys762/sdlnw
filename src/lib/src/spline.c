@@ -252,6 +252,8 @@ static __sdlnw_int_spline* __sdlnw_int_spline_create_rounded_box_bottom_line(int
 struct __sdlnw_int_spline_rounded_box_struct {
     __sdlnw_int_spline* top_line;
     __sdlnw_int_spline* bottom_line;
+    int width;
+    int height;
 };
 
 __sdlnw_int_spline_rounded_box* __sdlnw_int_spline_rounded_box_create(int width, int height, const SDLNW_CornerRadius* radius) {
@@ -260,6 +262,8 @@ __sdlnw_int_spline_rounded_box* __sdlnw_int_spline_rounded_box_create(int width,
 
     box->top_line = __sdlnw_int_spline_create_rounded_box_top_line(width, height, radius);
     box->bottom_line = __sdlnw_int_spline_create_rounded_box_bottom_line(width, height, radius);
+    box->width = width;
+    box->height = height;
 
     return box;
 }
@@ -271,5 +275,9 @@ void __sdlnw_int_spline_rounded_box_destroy(__sdlnw_int_spline_rounded_box* box)
 }
 
 bool __sdlnw_int_spline_rounded_box_within_bounds(const __sdlnw_int_spline_rounded_box* box, int x, int y) {
+    if (x < 0 || x >= box->width) {
+        return false;
+    }
+
     return y >= __sdlnw_int_spline_compute(box->top_line, x)  && y < __sdlnw_int_spline_compute(box->bottom_line, x);
 }

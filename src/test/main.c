@@ -13,6 +13,8 @@ extern const MunitSuite column_suite;
 extern const MunitSuite text_controller_suite;
 extern const MunitSuite composite_suite;
 extern const MunitSuite text_suite;
+extern const MunitSuite zstack_suite;
+extern const MunitSuite border_suite;
 
 int main(int argc, char** argv) {
     SDL_Init(SDL_INIT_EVERYTHING);
@@ -25,6 +27,8 @@ int main(int argc, char** argv) {
         placeholder_suite,
         text_controller_suite,
         text_suite,
+        zstack_suite,
+        border_suite,
         {0}
     };
 

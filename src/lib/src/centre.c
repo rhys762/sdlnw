@@ -40,7 +40,11 @@ static void centre_set_content_size(void* d, const SDL_Rect* rect) {
 static SDL_SystemCursor centre_appropriate_cursor(SDLNW_Widget* w, int x, int y) {
     struct centre_data* data = w->data;
 
-    return SDLNW_GetAppropriateCursorForWidget(data->child, x, y);
+    if (is_point_within_rect(x, y, &data->child->net_size)) {
+        return SDLNW_GetAppropriateCursorForWidget(data->child, x, y);
+    }
+
+    return SDL_SYSTEM_CURSOR_ARROW;
 }
 
 static void centre_destroy(SDLNW_Widget* w) {
