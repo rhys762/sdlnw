@@ -52,7 +52,7 @@ void SDLNW_DestroyWidgetWindowSet(SDLNW_WidgetWindowSet* set) {
     __sdlnw_free(set);
 }
 
-void SDLNW_WidgetWindowSet_CreateWidgetWindow(SDLNW_WidgetWindowSet* set, SDLNW_Widget* widget, SDLNW_WidgetWindowOptions options) {
+int SDLNW_WidgetWindowSet_CreateWidgetWindow(SDLNW_WidgetWindowSet* set, SDLNW_Widget* widget, SDLNW_WidgetWindowOptions options) {
     if (set->windows_len == set->windows_cap) {
         set->windows_cap *= 2;
         set->windows = __sdlnw_realloc(set->windows, sizeof(struct __sdlnw_widget_window) * set->windows_cap);
@@ -77,6 +77,8 @@ void SDLNW_WidgetWindowSet_CreateWidgetWindow(SDLNW_WidgetWindowSet* set, SDLNW_
     SDL_SetRenderDrawBlendMode(window->renderer, SDL_BLENDMODE_BLEND);
 
     SDLNW_SetWidgetNetSize(window->widget, &(SDL_Rect) {.x = 0, .y = 0, .w = screen_width, .h = screen_height});
+
+    return SDL_GetWindowID(window->window);
 }
 
 static struct __sdlnw_widget_window* get_window_with_id(SDLNW_WidgetWindowSet* set, Uint32 window_id) {

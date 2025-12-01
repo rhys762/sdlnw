@@ -334,7 +334,8 @@ SDLNW_Widget* SDLNW_CreateEmptyWidget(void);
 SDLNW_WidgetWindowSet* SDLNW_CreateWidgetWindowSet(void);
 void SDLNW_DestroyWidgetWindowSet(SDLNW_WidgetWindowSet* set);
 
-void SDLNW_WidgetWindowSet_CreateWidgetWindow(SDLNW_WidgetWindowSet* set, SDLNW_Widget* widget, SDLNW_WidgetWindowOptions options);
+// returns window id
+int SDLNW_WidgetWindowSet_CreateWidgetWindow(SDLNW_WidgetWindowSet* set, SDLNW_Widget* widget, SDLNW_WidgetWindowOptions options);
 void SDLNW_CreateWidgetWindowSet_step(SDLNW_WidgetWindowSet* set);
 size_t SDLNW_CreateWidgetWindowSet_get_number_of_windows(SDLNW_WidgetWindowSet* set);
 
