@@ -49,7 +49,7 @@ static SDLNW_Widget* button_compose(SDLNW_Widget* parent, void* data) {
         .bottom_right = radius
     };
 
-    SDLNW_Widget* label = SDLNWPrefab_CreateLabelWidget(bd->options.text, bd->options.font, bd->options.text_fg);
+    SDLNW_Widget* label = SDLNW_CreateCentreWidget(SDLNWPrefab_CreateLabelWidget(bd->options.text, bd->options.font, bd->options.text_fg));
 
     SDLNW_SetWidgetPadding(label, (SDLNW_Insets) {
         .top = 5,

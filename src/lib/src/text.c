@@ -333,7 +333,7 @@ static SDLNW_SizeResponse text_get_requested_size(SDLNW_Widget* widget, SDLNW_Si
 
         if (rt.chars_len > 0) {
             __sdlnw_RenderedChar* c = &rt.chars[rt.chars_len - 1];
-            req.width.pixels = request.total_pixels_avaliable_width;
+            req.width.pixels = c->rendered_to.x + c->rendered_to.w;
 
             req.height = (SDLNW_DimensionSizeRequest) {
                 .pixels = c->rendered_to.y + c->rendered_to.h
