@@ -29,7 +29,6 @@ void* __sdlnw_debug_malloc(size_t size, const char *file, int line);
 void* __sdlnw_debug_realloc(void *ptr, size_t size, const char *file, int line);
 void __sdlnw_debug_free(void *ptr);
 
-#define SDLNW_DEBUG 1
 #ifdef SDLNW_DEBUG
 
 #define __sdlnw_malloc(size) __sdlnw_debug_malloc(size, __FILE__, __LINE__)

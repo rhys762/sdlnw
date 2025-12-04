@@ -44,32 +44,38 @@ lib_src = files(
 
 # lib
 sdlnw_inc = include_directories('src/lib/include')
+
 sdlnw_lib = static_library(
   'SDLNW',
   lib_src,
   include_directories: sdlnw_inc,
+  c_args: ['-O3']
 )
 
-# unsure what this does but the subproject guide has it https://mesonbuild.com/Subprojects.html
-# revisit
-# install: true
+sdlnw_debug_lib = static_library(
+  'SDLNW_debug',
+  lib_src,
+  include_directories: sdlnw_inc,
+  c_args: ['-DSDLNW_DEBUG=1', '-g', '-O0']
+)
+
 
 cc = meson.get_compiler('c')
-
-sdlnw_dep = declare_dependency(include_directories: sdlnw_inc, link_with: sdlnw_lib)
 
 # std math lib
 m_dep = cc.find_library('m', required: false)
 
-# example programs
-executable(
-  'example_0_todo',
-  'src/examples/example_0_todo/main.c',
-  dependencies: [sdl2_dep, ttf_dep, sdlnw_dep, m_dep],
-)
+sdlnw_dep = declare_dependency(include_directories: sdlnw_inc, link_with: sdlnw_lib, dependencies: [sdl2_dep, ttf_dep, m_dep])
+sdlnw_debug_dep = declare_dependency(include_directories: sdlnw_inc, link_with: sdlnw_debug_lib, dependencies: [sdl2_dep, ttf_dep, m_dep],)
 
 # tests
 if not meson.is_subproject()
+  # example programs
+  executable(
+    'example_0_todo',
+    'src/examples/example_0_todo/main.c',
+    dependencies: [sdlnw_debug_dep],
+  )
 
   e = executable(
     'run_tests',
@@ -83,7 +89,7 @@ if not meson.is_subproject()
     'src/test/test_zstack.c',
     'src/test/test_border.c',
     lib_src,
-    dependencies: [sdl2_dep, ttf_dep, sdlnw_dep, munit_dep, m_dep, image_dep],
+    dependencies: [sdlnw_debug_dep, munit_dep, image_dep],
   )
 
   test('Unit Tests', e)
